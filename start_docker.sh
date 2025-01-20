@@ -8,6 +8,13 @@ CONTAINER_NAME=robotrainer_humble
 ROS_DOMAIN_ID=36
 PYTHONPATH=./:install/lib/python3.10/site-packages
 
+# Check if the container is already running
+if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "Container ${CONTAINER_NAME} is already running. Attaching to it..."
+    docker exec -it ${CONTAINER_NAME} ${COMMAND}
+    exit 0
+fi
+
 # Ensure XAUTHORITY is set
 export XAUTHORITY=${XAUTHORITY:-$HOME/.Xauthority}
 
