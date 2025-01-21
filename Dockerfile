@@ -128,4 +128,4 @@ RUN sudo sed --in-place --expression \
     '$i\source "/usr/share/gazebo/setup.bash"' \
     /ros_entrypoint.sh
 
-CMD /bin/bash
+CMD ["bash"]

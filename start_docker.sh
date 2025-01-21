@@ -5,6 +5,7 @@
 # Usage2: Run from cli with ./start_docker "custom command"
 COMMAND=${1:-bash}
 CONTAINER_NAME=robotrainer_humble
+CONTAINER_TAG=humble
 ROS_DOMAIN_ID=36
 PYTHONPATH=./:install/lib/python3.10/site-packages
 
@@ -35,7 +36,7 @@ docker run \
     -v $PWD/src/robotrainer3_description:/home/docker/ros2_ws/src/robotrainer3_description \
     -v $PWD/src/robotrainer3_bringup:/home/docker/ros2_ws/src/robotrainer3_bringup \
     -v /dev:/dev  \
-    ${CONTAINER_NAME}:humble \
+    ${CONTAINER_NAME}:${CONTAINER_TAG} \
     ${COMMAND}
 
     # --env-file .env \
