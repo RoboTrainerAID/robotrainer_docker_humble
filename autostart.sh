@@ -1,1 +1,1 @@
-./start_docker.sh "rviz"
+./start_docker.sh "rqt"
