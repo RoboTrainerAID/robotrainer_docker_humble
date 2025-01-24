@@ -32,9 +32,7 @@ docker run \
     -e XAUTHORITY=${XAUTHORITY} \
     -v $XAUTHORITY:$XAUTHORITY:rw \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v $PWD/.vscode:/home/docker/ros2_ws/src/.vscode \
-    -v $PWD/src/robotrainer3_description:/home/docker/ros2_ws/src/robotrainer3_description \
-    -v $PWD/src/robotrainer3_bringup:/home/docker/ros2_ws/src/robotrainer3_bringup \
+    -v $PWD/src:/home/docker/ros_ws/src \
     -v /dev:/dev  \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
     ${COMMAND}

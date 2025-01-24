@@ -76,7 +76,9 @@ WORKDIR /home/${USER}/ros_ws
 COPY ./src ./src
 
 # Build ros_ws
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh && colcon build --symlink-install \
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    . /home/${USER}/dependencies_ws/install/setup.sh && \
+    colcon build --symlink-install \
     --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 RUN echo "source /home/${USER}/ros_ws/install/setup.bash" >> /home/${USER}/.bashrc
 
@@ -84,11 +86,11 @@ RUN echo "source /home/${USER}/ros_ws/install/setup.bash" >> /home/${USER}/.bash
 ##                                 Autostart                                ##
 ##############################################################################
 RUN sudo sed --in-place --expression \
-    '$isource "/home/${USER}/ros_ws/install/setup.bash"' \
+    '$isource "/home/${USER}/dependencies_ws/install/setup.bash"' \
     /ros_entrypoint.sh
 
 RUN sudo sed --in-place --expression \
-    '$isource "/home/${USER}/dependencies_ws/install/setup.bash"' \
+    '$isource "/home/${USER}/ros_ws/install/setup.bash"' \
     /ros_entrypoint.sh
 
 CMD ["bash"]
