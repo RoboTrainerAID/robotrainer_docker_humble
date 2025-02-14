@@ -4,8 +4,8 @@ import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 
-from std_msgs.msg import Int32, Float32, Float32MultiArray, MultiArrayDimension, MultiArrayLayout
-
+from std_msgs.msg import Int32, Float32, Float32MultiArray, MultiArrayDimension, MultiArrayLayout, Header
+# from cdcl_msgs.msg import Vitals
 
 import time, sys, math
 import pexpect # need to isntall pexpect; $pip install pexpect
@@ -35,22 +35,25 @@ class ros2_polar_h10(Node):
         self.sensor_status = 0
         polar_h10_state = False
 
+        self.get_logger().info("Start to connect to Polar H10")
         while not polar_h10_state:
+            self.get_logger().info("Start of while loop")
             gatt = pexpect.spawn("gatttool -t random -b " + self.Parm_Device_Mac_Address+" --char-write-req --handle=0x0011 --value=0100 --listen" )
             check = gatt.readline()
             check = check.decode("utf-8")
+            self.get_logger().info(check)
             if check == "Characteristic value was written successfully\r\n":
                 line = gatt.readline()
                 line = line.decode("utf-8")
                 wonsu=line.split()
 
                 if wonsu[5] == "10":
-                    #print("[Polar] connecting")
+                    self.get_logger().info("[Polar] connecting")
                     polar_h10_state = True
             else:
-                #print("[Polar] fail to hack ble")
+                self.get_logger().info("[Polar] fail to hack ble")
                 pass
-        #print("[Polar] connected")
+        self.get_logger().info("[Polar] connected")
 
 
         #############################################################
@@ -74,7 +77,13 @@ class ros2_polar_h10(Node):
                 ibi_data = int(polar_h10_recevied_data[7],16)
                 bat_level_data = int(polar_h10_recevied_data[8],16)
                 if self.Parm_Sensor_Enable:
+                    #vitals = Vitals()
+                    header = Header()
+                    header.stamp = self.get_clock().now().to_msg()
+                    #vitals.header = header
+                    #vitals.data = hr_data
                     self.pub_polar_h10_hr.publish(Int32(data=hr_data))
+                    #self.pub_polar_h10_hr.publish(vitals)
                     self.pub_polar_h10_ibi.publish(Int32(data=ibi_data))
                     self.pub_polar_h10_bat.publish(Int32(data=bat_level_data))
                 else:

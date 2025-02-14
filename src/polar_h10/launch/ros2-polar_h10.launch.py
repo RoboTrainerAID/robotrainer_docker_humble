@@ -22,7 +22,7 @@ def generate_launch_description():
             'Chunk_Enable': True,
             'Chunk_Length': 10,
             ### For sensor devices
-            'Device_Mac_Address': 'C8:FF:28:20:D2:4A',
+            'Device_Mac_Address': 'A0:9E:1A:E0:BC:97',
             }] 
         )
   
