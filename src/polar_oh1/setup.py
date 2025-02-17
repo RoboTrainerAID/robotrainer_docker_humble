@@ -3,7 +3,7 @@ import os
 from glob import glob
 
 
-package_name = 'polar_h10'
+package_name = 'polar_oh1'
 
 setup(
     name=package_name,
@@ -20,12 +20,12 @@ setup(
     zip_safe=True,
     maintainer='Wonse Jo',
     maintainer_email='wonsu0513@gmail.com',
-    description='it is to read the biosignals of the polar_h10.',
+    description='it is to read the biosignals of the polar_oh1.',
     license='Apache License 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'polar_h10_node = polar_h10.polar_h10_node:main'
+            'polar_oh1_node = polar_oh1.polar_oh1_node:main'
         ],
     },
 )

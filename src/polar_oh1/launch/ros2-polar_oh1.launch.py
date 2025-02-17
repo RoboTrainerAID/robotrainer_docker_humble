@@ -12,11 +12,11 @@ def generate_launch_description():
     Subject_Number = "P1"
 
     ###### Physiological Sensor
-    ros2_foxy_polar_h10_node = Node(
-            package='polar_h10', 
+    ros2_foxy_polar_oh1_node = Node(
+            package='polar_oh1', 
             #namespace='Subject_Number',
-            executable='polar_h10_node',
-            name='polar_h10_node',
+            executable='polar_oh1_node',
+            name='polar_oh1_node',
             #output='screen',
             parameters=[{'Sensor_Enable': True, 
             'Chunk_Enable': True,
@@ -27,5 +27,5 @@ def generate_launch_description():
         )
   
     return LaunchDescription([
-        ros2_foxy_polar_h10_node,        
+        ros2_foxy_polar_oh1_node,        
     ])
