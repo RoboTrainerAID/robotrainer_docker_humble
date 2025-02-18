@@ -18,11 +18,12 @@ The Polar OH1+ is an optical heart rate monitor that combines versatility, comfo
 ## Topic Information
 ### For raw data
 1) _biosensors/polar_oh1/hr_ : 
-  * type: standard_msg/Float32
-  * size: 1-by-1 
+  * type: standard_msg/Int32
   * detail: the Heart Rate (HR) signal. 
 
-2) _xxx_
+2) _biosensors/polar_oh1/battery_:
+  * type: standard_msg/Int32
+  * detial: the status of the battery level.
 
 
 ## Test the Node using Launch file
