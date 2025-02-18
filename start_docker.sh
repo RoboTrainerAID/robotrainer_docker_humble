@@ -36,7 +36,12 @@ docker run \
     -v /dev:/dev  \
     -v /var/run/dbus:/var/run/dbus \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
-    ${COMMAND}
+    /bin/bash -c "
+    sudo usermod -a -G bluetooth docker && \
+    sudo service bluetooth start && \
+    exec ${COMMAND}
+    "
+    
 
     # --env-file .env \
     # libEGL for Gazebo needs access to /dev/dri/renderD129
