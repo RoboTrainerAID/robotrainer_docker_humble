@@ -37,10 +37,8 @@ docker run \
     -v /var/run/dbus:/var/run/dbus \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
     /bin/bash -c "
-    sudo usermod -a -G bluetooth docker && \
-    sudo service bluetooth start && \
-    exec ${COMMAND}
-    "
+    exec ${COMMAND}"
+    
     
 
     # --env-file .env \
