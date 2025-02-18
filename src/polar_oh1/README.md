@@ -1,21 +1,18 @@
-## Polar H10
+## Polar OH1+
 
-<img align="right" width="250" src="/media/img/polar_h10.jpg">
-The Polar H10 is a wearable heart rate biosensor and attached on the chest. It is mostly used for fitness objectives to read HR with 1Hz sampling time
+<img align="right" width="180" src="image/polar_oh1_sensor.webp">
+The Polar OH1+ is an optical heart rate monitor that combines versatility, comfort and simplicity. It can be worn on the forearm or upper arm. It is mostly used for fitness objectives to read HR.
 
 
-* Official website: [https://www.polar.com/us-en/products/accessories/h10_heart_rate_sensor](https://www.polar.com/us-en/products/accessories/h10_heart_rate_sensor)
+* Official website: [https://www.polar.com/us-en/sensors/oh1-optical-heart-rate-sensor](https://www.polar.com/us-en/sensors/oh1-optical-heart-rate-sensor)
 
 ## Requirments
-1) Install Python Library: '''$ pip install pexpect'''
+1) Install Python Libraries: '''$ pip install pexpect bleak'''
 
 
 ## Node Informations
-1) Node name: polar_h10_node
-2) Parameters:
-* _Sensor_Enable_ : a boolean data type (i.e., True or False).; default= _True_
-* _Chunk_Enable_ : a boolean data type (i.e., True or False).; default= _True_
-* _Chunk_Length_ : a integer data type to adjust data length per topic.; default= _128_
+1) Node name: polar_oh1_node
+2) Parameter:
 * Device_Mac_Address : a string data type to connect own device via ble/; for example, _'C9:61:FF:AC:8E:23'_
 
 ## Topic Information
