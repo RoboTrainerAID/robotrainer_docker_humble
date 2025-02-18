@@ -13,20 +13,22 @@ The Polar OH1+ is an optical heart rate monitor that combines versatility, comfo
 ## Node Informations
 1) Node name: polar_oh1_node
 2) Parameter:
-* Device_Mac_Address : a string data type to connect own device via ble/; for example, _'C9:61:FF:AC:8E:23'_
+* Device_Mac_Address : a string data type to connect own device via ble/; for example, _'A0:9E:1A:E0:BC:97'_
 
 ## Topic Information
 ### For raw data
-1) _biosensors/polar_h10/hr_ : 
+1) _biosensors/polar_oh1/hr_ : 
   * type: standard_msg/Float32
   * size: 1-by-1 
   * detail: the Heart Rate (HR) signal. 
+
+2) _xxx_
 
 
 ## Test the Node using Launch file
 
 ```bash
-$ros2 launch polar_h10 ros2-polar_h10.launch.py
+$ros2 launch polar_oh1 ros2-polar_oh1.launch.py
 ```
 
 # Example of Published Topic Data

@@ -29,6 +29,7 @@ sleep 10
 bluetoothctl <<EOF
 connect $DEVICE_MAC
 EOF
+sleep 10
 
 echo "✅ Connected to Polar OH1+!"
 exit
