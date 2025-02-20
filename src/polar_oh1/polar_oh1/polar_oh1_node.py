@@ -57,7 +57,6 @@ class PolarOH1Node(Node):
     def hr_handler(self, sender, data):
         """ Handle Heart Rate notifications """
         heart_rate = int(data[1])
-        self.get_logger().error(f"Heart Rate data: {data}")
         self.pub_hr.publish(Int32(data=heart_rate))
         self.get_logger().info(f"Heart Rate: {heart_rate} BPM")
  
