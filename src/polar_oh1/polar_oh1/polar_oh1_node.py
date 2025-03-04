@@ -3,8 +3,16 @@ from bleak import BleakClient
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Int32, Float32MultiArray
+import struct
+import math
 
 class PolarOH1Node(Node):
+
+    CP_CHAR_UUID = "fb005c81-02e7-f387-1cad-8acd2d8df0c8"
+    DATA_CHAR_UUID = "fb005c82-02e7-f387-1cad-8acd2d8df0c8"
+    POLAR_SERVICE_UUID = "fb005c80-02e7-f387-1cad-8acd2d8df0c8"
+    HR_CHAR_UUID = "00002a37-0000-1000-8000-00805f9b34fb"
+    BATTERY_CHAR_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
 
     def __init__(self):
         super().__init__('polar_oh1_node')
@@ -15,73 +23,83 @@ class PolarOH1Node(Node):
 
         # Publishers
         self.pub_hr = self.create_publisher(Int32, 'biosensors/polar_oh1/hr', 10)
-        self.pub_ppg = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg', 10)
         self.pub_battery = self.create_publisher(Int32, 'biosensors/polar_oh1/battery', 10)
+        self.pub_ppg_ch0 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch0', 10)
+        self.pub_ppg_ch1 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch1', 10)
+        self.pub_ppg_ch2 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch2', 10)
+        self.pub_ppg_ch3 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch3', 10)
 
         self.get_logger().info("🔄 Starting connection to Polar OH1+...")
-
-        # Connection search
-        self.connection_attempts = 0
-        self.max_attempts = 10  # Max Trials
-
-        asyncio.run(self.connect_to_polar())
+        asyncio.ensure_future(self.connect_to_polar())
 
     async def connect_to_polar(self):
-        while self.connection_attempts < self.max_attempts:
+        while True:
             try:
                 async with BleakClient(self.device_mac) as client:
                     self.get_logger().info("✅ [Polar OH1+] Connected!")
 
-                    # Enable PPG streaming
-                    await client.write_gatt_char("fb005c81-02e7-f387-1cad-8acd2d8df0c8", bytearray([0x01]))
-                    self.get_logger().info("📡 PPG Streaming Enabled")
+                    # Enable notifications
+                    await client.start_notify(self.HR_CHAR_UUID, self.hr_handler)
+                    await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
+                    await self.enable_ppg(client)
 
-                    # Subscribe to notifications
-                    await client.start_notify("00002a37-0000-1000-8000-00805f9b34fb", self.hr_handler)  # Heart Rate
-                    await client.start_notify("fb005c82-02e7-f387-1cad-8acd2d8df0c8", self.ppg_handler)  # PPG
-
-                    # Read battery level every 10 seconds
-                    while rclpy.ok():
-                        battery_level = await client.read_gatt_char("00002a19-0000-1000-8000-00805f9b34fb")
+                    while client.is_connected:
+                        battery_level = await client.read_gatt_char(self.BATTERY_CHAR_UUID)
                         battery_percentage = int(battery_level[0])
                         self.pub_battery.publish(Int32(data=battery_percentage))
                         self.get_logger().info(f"🔋 Battery Level: {battery_percentage}%")
                         await asyncio.sleep(10)
-
-                    # Stop notifications before disconnecting
-                    await client.stop_notify("00002a37-0000-1000-8000-00805f9b34fb")
-                    await client.stop_notify("fb005c82-02e7-f387-1cad-8acd2d8df0c8")
-
             except Exception as e:
-                self.connection_attempts += 1
-                self.get_logger().error(f"❌ Connection attempt {self.connection_attempts}/{self.max_attempts} failed: {e}")
-                if self.connection_attempts >= self.max_attempts:
-                    self.get_logger().error("🛑 Max connection attempts reached. Shutting down node.")
-                    self.destroy_node()
-                    rclpy.shutdown()
-                    return
-                self.get_logger().info("🔄 Retrying in 5 seconds...")
-                await asyncio.sleep(5)  # Retry connection after 5 seconds
+                self.get_logger().error(f"⚠️ Connection error: {e}, retrying in 5 seconds...")
+                await asyncio.sleep(5)
+
+    async def enable_ppg(self, client):
+        cmd = bytearray([0x02, 0x01, 0x00, 0x01, 0x82, 0x00, 0x01, 0x01, 0x16, 0x00])
+        await client.write_gatt_char(self.CP_CHAR_UUID, cmd)
 
     def hr_handler(self, sender, data):
-        """ Verarbeitung der Herzfrequenzdaten """
         heart_rate = int(data[1])
         self.pub_hr.publish(Int32(data=heart_rate))
         self.get_logger().info(f"❤️ Heart Rate: {heart_rate} BPM")
 
-    def ppg_handler(self, sender, data):
-        """ Verarbeitung der PPG-Daten """
-        ppg_values = [int(byte) for byte in data] # convert bytes to integers
-        msg = Float32MultiArray(data=ppg_values)
-        self.pub_ppg.publish(msg)
-        self.get_logger().info(f"📊 PPG Data: {ppg_values}")
+    def notification_handler(self, sender, data):
+        type1, _, type2 = struct.unpack("<BqB", data[0:10])
+        if type1 == 1:
+            self.parse_ppg(data)
+
+    def parse_ppg(self, data):
+        def get_ppg_value(subdata):
+            return struct.unpack("<i", subdata + (b'\0' if subdata[2] < 128 else b'\xff'))[0]
+
+        numSamples = math.floor((len(data) - 10) / 12)
+        ppg_values = {0: [], 1: [], 2: [], 3: []}
+
+        for x in range(numSamples):
+            for y in range(4):
+                ppg_values[y].append(get_ppg_value(data[10 + x * 12 + y * 3:(10 + x * 12 + y * 3) + 3]))
+
+        self.publish_ppg(ppg_values)
+
+    def publish_ppg(self, ppg_values):
+        if len(ppg_values) >= 4:
+            if self.context.ok():
+                self.pub_ppg_ch0.publish(Float32MultiArray(data=ppg_values[0]))
+                self.pub_ppg_ch1.publish(Float32MultiArray(data=ppg_values[1]))
+                self.pub_ppg_ch2.publish(Float32MultiArray(data=ppg_values[2]))
+                self.pub_ppg_ch3.publish(Float32MultiArray(data=ppg_values[3]))
+                self.get_logger().info(f"📡 PPG Ch0: {ppg_values[0][0]} | Ch1: {ppg_values[1][0]} | Ch2: {ppg_values[2][0]} | Ch3: {ppg_values[3][0]}")
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = PolarOH1Node()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        asyncio.run(node.connect_to_polar())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
