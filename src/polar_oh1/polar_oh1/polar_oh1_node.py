@@ -50,13 +50,13 @@ class PolarOH1Node(Node):
                     await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
                     await self.enable_measurements(client)
                     
-                    # Read battery level every 10 seconds
+                    # Read battery level every 90 seconds
                     while client.is_connected:
                         battery_level = await client.read_gatt_char(self.BATTERY_CHAR_UUID)
                         battery_percentage = int(battery_level[0])
                         self.pub_battery.publish(Int32(data=battery_percentage))
                         self.get_logger().info(f"🔋 Battery Level: {battery_percentage}%")
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(90)
 
             except Exception as e:
                 self.get_logger().error(f"⚠️ Connection error: {e}, retrying in 5 seconds...")
