@@ -25,7 +25,16 @@ def generate_launch_description():
             'Device_Mac_Address': 'A0:9E:1A:E0:BC:97',
             }] 
         )
+
+    ros2_bag_record = ExecuteProcess(
+        cmd=['ros2', 'bag', 'record','-o', '/home/docker/ros_ws/src/data', '/biosensors/polar_oh1/hr', '/biosensors/polar_oh1/battery', 
+             '/biosensors/polar_oh1/ppg_ch0', '/biosensors/polar_oh1/ppg_ch1', 
+             '/biosensors/polar_oh1/ppg_ch2', '/biosensors/polar_oh1/ppg_ch3', 
+             '/biosensors/polar_oh1/ppi', '/biosensors/polar_oh1/hrv'],
+        output='both'
+    )
   
     return LaunchDescription([
-        ros2_foxy_polar_oh1_node,        
+        ros2_foxy_polar_oh1_node,
+        ros2_bag_record,        
     ])
