@@ -34,7 +34,6 @@ docker run \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v $PWD/src:/home/docker/ros_ws/src \
     -v /dev:/dev  \
-    -v /var/run/dbus:/var/run/dbus \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
     /bin/bash -c "
     exec ${COMMAND}"
