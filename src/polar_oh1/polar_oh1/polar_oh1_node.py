@@ -45,12 +45,13 @@ class PolarOH1Node(Node):
                     
                     # Subscribe to notifications
                     await client.start_notify(self.HR_CHAR_UUID, self.hr_handler)
-                    await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
-                    await self.enable_measurements(client)
+                    
                     
                     # Keep the connection alive
                     while client.is_connected:
-                        await asyncio.sleep(5)
+                        await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
+                        await self.enable_measurements(client)
+                        await asyncio.sleep(20)
 
             except Exception as e:
                 self.get_logger().error(f"⚠️ Connection error: {e}, retrying in 5 seconds...")

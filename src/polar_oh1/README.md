@@ -50,5 +50,15 @@ ros2 launch polar_oh1 ros2-polar_oh1.launch.py
 ```
 # Example of Published Topic Data
 <p align="center">
-<img src="/media/img/polar_h10_data.jpg" width="700" >
+<img src="image/hr_data.png" width="700" >
 </p>
+<p align="center">
+<img src="image/ppg_data.png" width="700" >
+</p>
+<p align="center">
+<img src="image/hrv_data.png" width="700" >
+</p>
+<p align="center">
+<img src="image/ppi_data.png" width="700" >
+</p>
+
