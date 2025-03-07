@@ -12,10 +12,10 @@ def generate_launch_description():
     # Subject Information
     Subject_Number = "P1"
 
-    # Erstelle den Zeitstempel
+    # create timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    # Speicherpfad mit Zeitstempel
+    # path to save data with timestamp
     base_path = "/home/docker/ros_ws/src/data/"
     output_path = os.path.join(base_path, timestamp)
 
