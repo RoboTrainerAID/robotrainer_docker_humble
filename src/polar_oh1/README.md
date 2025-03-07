@@ -65,5 +65,7 @@ ros2 launch polar_oh1 ros2-polar_oh1.launch.py
 <p align="center">
 <img src="image/ppi_data.png" width="700" >
 </p>
-
+<p align="center">
+<img src="image/battery_level.png" width="700" >
+</p>
 
