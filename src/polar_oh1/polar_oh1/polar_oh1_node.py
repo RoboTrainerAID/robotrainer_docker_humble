@@ -13,7 +13,6 @@ class PolarOH1Node(Node):
     DATA_CHAR_UUID = "fb005c82-02e7-f387-1cad-8acd2d8df0c8"
     POLAR_SERVICE_UUID = "fb005c80-02e7-f387-1cad-8acd2d8df0c8"
     HR_CHAR_UUID = "00002a37-0000-1000-8000-00805f9b34fb"
-    BATTERY_CHAR_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
 
     def __init__(self):
         super().__init__('polar_oh1_node')
@@ -24,7 +23,6 @@ class PolarOH1Node(Node):
 
         # Publishers
         self.pub_hr = self.create_publisher(Int32, 'biosensors/polar_oh1/hr', 10)
-        self.pub_battery = self.create_publisher(Int32, 'biosensors/polar_oh1/battery', 10)
         self.pub_ppg_ch0 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch0', 10)
         self.pub_ppg_ch1 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch1', 10)
         self.pub_ppg_ch2 = self.create_publisher(Float32MultiArray, 'biosensors/polar_oh1/ppg_ch2', 10)
@@ -50,13 +48,9 @@ class PolarOH1Node(Node):
                     await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
                     await self.enable_measurements(client)
                     
-                    # Read battery level every 90 seconds
+                    # Keep the connection alive
                     while client.is_connected:
-                        battery_level = await client.read_gatt_char(self.BATTERY_CHAR_UUID)
-                        battery_percentage = int(battery_level[0])
-                        self.pub_battery.publish(Int32(data=battery_percentage))
-                        self.get_logger().info(f"🔋 Battery Level: {battery_percentage}%")
-                        await asyncio.sleep(90)
+                        await asyncio.sleep(5)
 
             except Exception as e:
                 self.get_logger().error(f"⚠️ Connection error: {e}, retrying in 5 seconds...")

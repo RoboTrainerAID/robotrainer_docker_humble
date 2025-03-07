@@ -19,31 +19,27 @@ The Polar OH1+ is an optical heart rate monitor that combines versatility, comfo
   * type: standard_msg/Int32
   * description: the Heart Rate (HR) signal. 
 
-2) _biosensors/polar_oh1/battery_:
-  * type: standard_msg/Int32
-  * description: the status of the battery level.
-
-3) _biosensors/polar_oh1/ppg_ch0_ :
+2) _biosensors/polar_oh1/ppg_ch0_ :
   * type: standard_msg/Float32MultiArray
   * description: raw Photoplethysmography (PPG) data from channel 0.  
 
-4) _biosensors/polar_oh1/ppg_ch1_ :
+3) _biosensors/polar_oh1/ppg_ch1_ :
   * type: standard_msg/Float32MultiArray
   * description: raw Photoplethysmography (PPG) data from channel 1.  
 
-5) _biosensors/polar_oh1/ppg_ch2_ :
+4) _biosensors/polar_oh1/ppg_ch2_ :
   * type: standard_msg/Float32MultiArray
   * description: raw Photoplethysmography (PPG) data from channel 2.  
 
-6) _biosensors/polar_oh1/ppg_ch3_ :
+5) _biosensors/polar_oh1/ppg_ch3_ :
   * type: standard_msg/Float32MultiArray
   * description: raw Photoplethysmography (PPG) data from channel 3.  
 
-7) _biosensors/polar_oh1/ppi_ :
+6) _biosensors/polar_oh1/ppi_ :
   * type: standard_msg/Int32
   * description: the Peak-to-Peak Interval (PPI) signal.
 
-8) _biosensors/polar_oh1/hrv_ :
+7) _biosensors/polar_oh1/hrv_ :
   * type: standard_msg/Float32MultiArray
   * description: the Heart Rate Variability (HRV) signal.
 

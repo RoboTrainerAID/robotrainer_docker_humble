@@ -39,5 +39,4 @@ Once `autostart.sh` is executed, the system will automatically start collecting 
 * **Heart Rate (HR)**
 * **PPG values** (multiple channels)
 * **PPI values**
-* **Battery status**
 * **Heart Rate Variability (HRV)** (RMSSD/SDNN)
