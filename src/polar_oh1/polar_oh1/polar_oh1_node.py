@@ -42,7 +42,7 @@ class PolarOH1Node(Node):
             try:
                 async with BleakClient(self.device_mac) as client:
                     self.get_logger().info("✅ [Polar OH1+] Connected!")
-                    
+                            
                     # Subscribe to notifications
                     await client.start_notify(self.HR_CHAR_UUID, self.hr_handler)
                     await client.start_notify(self.DATA_CHAR_UUID, self.notification_handler)
