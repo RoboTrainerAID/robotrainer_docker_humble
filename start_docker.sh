@@ -4,7 +4,7 @@
 # Usage1: Modify ./autostart.sh file and add custom command there
 # Usage2: Run from cli with ./start_docker "custom command"
 COMMAND=${1:-bash}
-CONTAINER_NAME=robotrainer_humble
+CONTAINER_NAME=robotrainer_bo
 CONTAINER_TAG=humble
 ROS_DOMAIN_ID=36
 PYTHONPATH=./:install/lib/python3.10/site-packages
@@ -33,6 +33,7 @@ docker run \
     -v $XAUTHORITY:$XAUTHORITY:rw \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v $PWD/src:/home/docker/ros_ws/src \
+    -v $PWD/data:/home/docker/ros_ws/data \
     -v /dev:/dev  \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
     ${COMMAND}

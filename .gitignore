@@ -2,6 +2,7 @@
 # .vscode
 .DS_Store
 .idea
+data/bags/*.bag
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -141,7 +142,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-# misc
-.DS_Store
-data/

@@ -46,29 +46,30 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 ##############################################################################
 ##                                 dependencies_ws                          ##
 ##############################################################################
-USER ${USER}
-RUN mkdir -p /home/${USER}/dependencies_ws/src
-WORKDIR /home/${USER}/dependencies_ws/src
+# USER ${USER}
+# RUN mkdir -p /home/${USER}/dependencies_ws/src
+# WORKDIR /home/${USER}/dependencies_ws/src
 
-# ARG CACHE_BUST
-# RUN git clone --branch <BRANCH> <REPO_URL>
-RUN git clone https://github.com/BehaviorTree/Groot.git
-RUN git clone --branch humble https://github.com/AndreasZachariae/BehaviorTree.IRAS.git
+# # ARG CACHE_BUST
+# # RUN git clone --branch <BRANCH> <REPO_URL>
+# RUN git clone https://github.com/BehaviorTree/Groot.git
+# RUN git clone --branch humble https://github.com/AndreasZachariae/BehaviorTree.IRAS.git
 
-# Build dependencies_ws
-WORKDIR /home/${USER}/dependencies_ws
-RUN rosdep update --rosdistro ${ROS_DISTRO}
-USER root
-RUN apt-get update 
-RUN rosdep install --from-paths src --ignore-src -r -y
-RUN rm -rf /var/lib/apt/lists/*
-USER ${USER}
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh && colcon build
-RUN echo "source /home/${USER}/dependencies_ws/install/setup.bash" >> /home/$USER/.bashrc
+# # Build dependencies_ws
+# WORKDIR /home/${USER}/dependencies_ws
+# RUN rosdep update --rosdistro ${ROS_DISTRO}
+# USER root
+# RUN apt-get update 
+# RUN rosdep install --from-paths src --ignore-src -r -y
+# RUN rm -rf /var/lib/apt/lists/*
+# USER ${USER}
+# RUN . /opt/ros/${ROS_DISTRO}/setup.sh && colcon build
+# RUN echo "source /home/${USER}/dependencies_ws/install/setup.bash" >> /home/$USER/.bashrc
 
 ##############################################################################
 ##                                 ros_ws                                   ##
 ##############################################################################
+USER ${USER}
 RUN mkdir -p /home/${USER}/ros_ws/src
 WORKDIR /home/${USER}/ros_ws
 
@@ -77,7 +78,6 @@ COPY ./src ./src
 
 # Build ros_ws
 RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
-    . /home/${USER}/dependencies_ws/install/setup.sh && \
     colcon build --symlink-install \
     --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 RUN echo "source /home/${USER}/ros_ws/install/setup.bash" >> /home/${USER}/.bashrc
@@ -85,9 +85,9 @@ RUN echo "source /home/${USER}/ros_ws/install/setup.bash" >> /home/${USER}/.bash
 ##############################################################################
 ##                                 Autostart                                ##
 ##############################################################################
-RUN sudo sed --in-place --expression \
-    '$isource "/home/${USER}/dependencies_ws/install/setup.bash"' \
-    /ros_entrypoint.sh
+# RUN sudo sed --in-place --expression \
+#     '$isource "/home/${USER}/dependencies_ws/install/setup.bash"' \
+#     /ros_entrypoint.sh
 
 RUN sudo sed --in-place --expression \
     '$isource "/home/${USER}/ros_ws/install/setup.bash"' \
