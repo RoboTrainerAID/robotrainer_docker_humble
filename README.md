@@ -5,7 +5,7 @@ ros2 environment for RoboTrainer development.
 ## Getting Started
 ### Build the Docker Container
 1) Clone repository.
-2) Navigate to the `robotrainer_docker_humble` directory
+2) Navigate to the `robotrainer_docker_polar_oh1` directory
 3) Build container:
 ```bash
 ./build_docker.sh
@@ -28,7 +28,7 @@ ros2 environment for RoboTrainer development.
 ### Accessing and Visualizing Data
 5) To visulize the data, open a new terminal and connect to running container.
 ```bash 
-docker exec -it robotrainer_humble /bin/bash
+docker exec -it robotrainer_polar_oh1 /bin/bash
 ```
 6) Run PlotJuggler:
 ```bash 
