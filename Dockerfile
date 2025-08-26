@@ -32,7 +32,7 @@ ENV FASTRTPS_DEFAULT_PROFILES_FILE=/home/${USER}/dds_profile.xml
 ##############################################################################
 # Install default packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    iputils-ping nano htop git sudo wget curl gedit python-pip gdb \
+    iputils-ping nano htop git sudo wget curl gedit python3-pip gdb \
     && rm -rf /var/lib/apt/lists/*
 
 # Install custom dependencies
@@ -40,8 +40,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 #     <YOUR_PACKAGE> \
 #     && rm -rf /var/lib/apt/lists/*
 
-# RUN pip install \
-#     <YOUR_PACKAGE>
+RUN pip install \
+    pandas \
+    rosbags \
+    botorch \
+    ax-platform==1.0.0 \
+    numpy==1.24.3
 
 ##############################################################################
 ##                                 dependencies_ws                          ##

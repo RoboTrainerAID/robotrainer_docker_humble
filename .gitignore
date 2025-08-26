@@ -3,6 +3,8 @@
 .DS_Store
 .idea
 data/bags/*.bag
+data/initial_data/*.bag
+data/scenarios/*.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

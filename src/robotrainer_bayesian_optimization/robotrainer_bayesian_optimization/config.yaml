@@ -1,0 +1,7 @@
+{
+  initial_data_files: {
+    0: "/home/docker/ros_ws/data/initial_data/green_line_1_2025-05-29-21-32-32.bag",
+    40: "/home/docker/ros_ws/data/initial_data/green_line_40_1_2025-05-29-21-33-53.bag",
+  },
+  default_bag_file: "/home/docker/ros_ws/data/bags/green_line_80_1_2025-05-29-21-35-44.bag",
+}
