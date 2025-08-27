@@ -190,8 +190,8 @@ def construct_generation_strategy(
     # Center node is a customized node that uses a simplified logic and has a
     # built-in transition criteria that transitions after generating once.
     center_node = CenterGenerationNode(next_node_name=sobol_node.node_name)
-    # return GenerationStrategy(
-    #     name=f"Center+Sobol+{node_name}",
-    #     nodes=[center_node, sobol_node, botorch_node]
-    # )
-    return GenerationStrategy(name=f"{node_name}", nodes=[botorch_node])
+    return GenerationStrategy(
+        name=f"Center+Sobol+{node_name}",
+        nodes=[center_node, sobol_node, botorch_node]
+    )
+    # return GenerationStrategy(name=f"{node_name}", nodes=[botorch_node])

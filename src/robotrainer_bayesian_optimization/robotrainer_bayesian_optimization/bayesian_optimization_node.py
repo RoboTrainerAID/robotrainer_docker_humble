@@ -6,10 +6,11 @@ from ax.generation_strategy.model_spec import GeneratorSpec
 from ax.modelbridge.registry import Generators
 from rclpy.node import Node
 from std_srvs.srv import Trigger
+from std_msgs.msg import String
 
 from .bayesian_optimisation import construct_generation_strategy, qUpperConfidenceBound
 from .utils import BagReader, DataFrameProcessing, create_new_scenario
-
+import os
 
 class BayesianOptimizationNode(Node):
 
@@ -18,7 +19,13 @@ class BayesianOptimizationNode(Node):
         self.srv = self.create_service(
             Trigger, "/robotrainer_bayesian_optimization/update", self.update_callback
         )
-
+        self.subscriber = self.create_subscription(
+            String,
+            "/robotrainer_user_study_manager/study_status",
+            self.study_status_callback,
+            10,
+        )
+        self.study_status = ""
         # Load initial data from config file
         self.config_file_path = "/home/docker/ros_ws/src/robotrainer_bayesian_optimization/robotrainer_bayesian_optimization/config.yaml"
         self.initial_data = {}
@@ -94,20 +101,43 @@ class BayesianOptimizationNode(Node):
         trials = self.client.get_next_trials(max_trials=1)
         self.next_index, self.next_parameters = next(iter(trials.items()))
         self.get_logger().info(f"Next suggestion:\n - index: {self.next_index}, \n - parameters: {self.next_parameters}")
+        
+        # Create Scenario
+        default_scenario_path = "/home/docker/ros_ws/data/scenarios/default_scenario.yaml"
+        with open(default_scenario_path, "r") as file:
+            scenario_data = yaml.safe_load(file)
 
+        scenario_id = f"trial_{self.next_index}_force_{self.next_parameters['virtual_force']}"
+        new_scenario = create_new_scenario(scenario_data, self.next_parameters["virtual_force"], scenario_id)
+
+        # Save yaml
+        scenario_name = f"initial_scenario.yaml"
+        scenario_path_in_container = (
+            "/home/docker/ros_ws/data/scenarios/" + scenario_name
+        )
+        with open(scenario_path_in_container, "w") as file:
+            yaml.dump(new_scenario, file)
+        self.get_logger().info(f"Created new scenario file: {scenario_name}")
         self.get_logger().info("Successfully started robotrainer_bayesian_optimization")
+
+    def study_status_callback(self, msg):
+        self.study_status = msg.data
+        self.get_logger().info(f"Study status updated to: {self.study_status}")
+
 
     def update_callback(self, request, response):
         self.get_logger().info("Incoming request...")
-
-        bag_file_path = ""
-        with open(self.config_file_path, "r") as file:
-            config = yaml.safe_load(file)
-            bag_file_path = config["default_bag_file"]
+        folder = "/home/docker/ros_ws/data/bags/"
+        start = self.study_status
+        matches = [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith(start)]
+        bag_file_path = matches[0] if len(matches) == 1 else ""
+        # with open(self.config_file_path, "r") as file:
+        #     config = yaml.safe_load(file)
+        #     bag_file_path = config["current_bag_file"]
 
         if not bag_file_path:
             response.success = False
-            response.message = "No bag file path provided."
+            response.message = "Can not find bag file path or there are two of them!"
             return response
         self.get_logger().info(f"Bag file path: {bag_file_path}")
 
@@ -138,15 +168,17 @@ class BayesianOptimizationNode(Node):
         with open(default_scenario_path, "r") as file:
             scenario_data = yaml.safe_load(file)
 
-        new_scenario = create_new_scenario(scenario_data, self.next_parameters["virtual_force"])
+        scenario_id = f"trial_{self.next_index}_force_{self.next_parameters['virtual_force']}"
+        new_scenario = create_new_scenario(scenario_data, self.next_parameters["virtual_force"], scenario_id)
 
         # Save yaml
-        scenario_name = f"trial_{self.next_index}_force_{self.next_parameters['virtual_force']}.yaml"
+        
+        scenario_name = f"{scenario_id}.yaml"
         scenario_path_in_container = (
             "/home/docker/ros_ws/data/scenarios/" + scenario_name
         )
         scenario_path_on_robotrainer = (
-            "/home/robotrainer/workspace/docker/robotrainer_bayesian_optimization/data/scenarios/"
+            "/home/robotrainer/workspace/docker/robotrainer_docker_bayesian_optimization/data/scenarios/"
             + scenario_name
         )
 
@@ -154,7 +186,7 @@ class BayesianOptimizationNode(Node):
             yaml.dump(new_scenario, file)
         
         response.success = True
-        response.message = scenario_path_on_robotrainer
+        response.message = scenario_name
         self.get_logger().info(f"Created new scenario file: {scenario_name}")
         return response
 

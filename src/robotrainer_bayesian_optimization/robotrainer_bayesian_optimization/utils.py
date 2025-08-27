@@ -6,6 +6,7 @@ from rosbags.rosbag1 import Reader
 from rosbags.typesys import Stores, get_typestore
 from rosbags.typesys.msg import get_types_from_msg
 
+from datetime import datetime
 
 class MessageReader:
 
@@ -238,7 +239,7 @@ class BagReader:
         return bag_data_df
 
 
-def create_new_scenario(existing_scenario, new_force):
+def create_new_scenario(existing_scenario, new_force, scenario_name):
     force_name = existing_scenario["force"]["config"]["force_names"][0]
 
     area = np.array(
@@ -281,9 +282,6 @@ def create_new_scenario(existing_scenario, new_force):
         ]
     )
     new_margin = new_area + radius
-    print(
-        f"new_point: {random_location},\nnew area: {new_area},\nnew margin: {new_margin}"
-    )
 
     existing_scenario["force"]["data"][force_name]["area"]["x"] = new_area.tolist()[0]
     existing_scenario["force"]["data"][force_name]["area"]["y"] = new_area.tolist()[1]
@@ -296,5 +294,12 @@ def create_new_scenario(existing_scenario, new_force):
     existing_scenario["force"]["data"][force_name]["margin"]["x"] = new_margin.tolist()[0]
     existing_scenario["force"]["data"][force_name]["margin"]["y"] = new_margin.tolist()[1]
     existing_scenario["force"]["data"][force_name]["margin"]["z"] = new_margin.tolist()[2]
+
+    scenario_path_on_robotrainer = (
+            "/home/robotrainer/workspace/docker/robotrainer_docker_bayesian_optimization/data/scenarios/" + scenario_name
+        )
+    existing_scenario["scenario"] = scenario_path_on_robotrainer
+    scenario_id = "scenario_id" + datetime.now().strftime('%Y%m%d%H%M')
+    existing_scenario["scenario_id"] = scenario_id
 
     return existing_scenario
