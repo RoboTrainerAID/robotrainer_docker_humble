@@ -1,12 +1,13 @@
 import random
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import yaml
 from rosbags.rosbag1 import Reader
 from rosbags.typesys import Stores, get_typestore
 from rosbags.typesys.msg import get_types_from_msg
 
-from datetime import datetime
 
 class MessageReader:
 
@@ -164,9 +165,15 @@ class BagReader:
     std_msgs/Header header
     geometry_msgs/Pose2D pose
     """
-
-    def __init__(self, selected_topics):
-        self.selected_topics = selected_topics
+    selected_topics = [
+            "/base/output_data",
+            "/base/virtual_forces/modalities_debug/resulting_force",
+            "/base/virtual_forces/modalities_debug/status",
+            "/robotrainer_deviation/robotrainer_deviation",
+            "/biosensors/polar_oh1/hr",
+        ]
+    
+    def __init__(self):
         self.message_reader = MessageReader()
 
         self.typestore = get_typestore(Stores.ROS1_NOETIC)
@@ -239,7 +246,12 @@ class BagReader:
         return bag_data_df
 
 
-def create_new_scenario(existing_scenario, new_force, scenario_name):
+def create_new_scenario(new_force, scenario_name):
+
+    default_scenario_path = "/home/docker/ros_ws/data/scenarios/default_scenario.yaml"
+    with open(default_scenario_path, "r") as file:
+        existing_scenario = yaml.safe_load(file)
+
     force_name = existing_scenario["force"]["config"]["force_names"][0]
 
     area = np.array(
@@ -303,3 +315,15 @@ def create_new_scenario(existing_scenario, new_force, scenario_name):
     existing_scenario["scenario_id"] = scenario_id
 
     return existing_scenario
+
+
+def get_mean_values_from_bag(bag_file_path, bag_reader):
+    # Read selected topics from bag file in pandas DataFrame
+    bag_data_df = bag_reader.read_bag_file(bag_file_path)
+
+    # Process Data
+    df_processing = DataFrameProcessing(bag_data_df)
+    bag_data_df_virtual_force = df_processing.create_virtual_force_df()
+    virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
+    mean_values = virtual_force_df_processing.mean_values()
+    return mean_values
