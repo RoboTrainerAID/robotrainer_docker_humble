@@ -111,8 +111,9 @@ class BayesianOptimizationNode(Node):
         self.get_logger().info("Successfully started robotrainer_bayesian_optimization")
 
     def study_status_callback(self, msg):
+        if not (self.study_status == msg.data):
+            self.get_logger().info(f"Study status updated to: {msg.data}")
         self.study_status = msg.data
-        self.get_logger().info(f"Study status updated to: {self.study_status}")
 
     def update_callback(self, request, response):
         self.get_logger().info("Incoming request...")
@@ -155,7 +156,7 @@ class BayesianOptimizationNode(Node):
             yaml.dump(new_scenario, file)
         
         response.success = True
-        response.message = scenario_name
+        response.message = scenario_id
         self.get_logger().info(f"Created new scenario file: {scenario_name}")
         return response
 
