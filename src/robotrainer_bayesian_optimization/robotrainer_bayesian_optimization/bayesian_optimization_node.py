@@ -134,10 +134,9 @@ class BayesianOptimizationNode(Node):
                 self.next_parameters,
                 {"wrench_force": mean_values["wrench_force_y"]},
             )
-        trial_index = self.client.attach_trial(parameters=parameters)
-        self.client.complete_trial(trial_index=trial_index, raw_data=raw_data)
+        self.client.complete_trial(trial_index=self.next_index, raw_data=raw_data)
         self.get_logger().info(
-            f"Completed trial {trial_index} with parameters {parameters} and data {raw_data}"
+            f"Completed trial {self.next_index} with parameters {parameters} and data {raw_data}"
         )
         trials = self.client.get_next_trials(max_trials=1)
         self.next_index, self.next_parameters = next(iter(trials.items()))
