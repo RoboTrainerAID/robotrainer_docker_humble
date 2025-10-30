@@ -169,29 +169,29 @@ def construct_generation_strategy(
         node_name=node_name,
         model_specs=[generator_spec],
     )
-    sobol_node = GenerationNode(
-        node_name="Sobol",
-        model_specs=[
-            GeneratorSpec(
-                model_enum=Generators.SOBOL,
-                # Let's use model_kwargs to set the random seed.
-                model_kwargs={"seed": 42},
-            ),
-        ],
-        transition_criteria=[
-            # Transition to BoTorch node once there are 5 trials on the experiment.
-            MinTrials(
-                threshold=4,
-                transition_to=botorch_node.node_name,
-                use_all_trials_in_exp=True,
-            )
-        ],
-    )
+    # sobol_node = GenerationNode(
+    #     node_name="Sobol",
+    #     model_specs=[
+    #         GeneratorSpec(
+    #             model_enum=Generators.SOBOL,
+    #             # Let's use model_kwargs to set the random seed.
+    #             model_kwargs={"seed": 42},
+    #         ),
+    #     ],
+    #     transition_criteria=[
+    #         # Transition to BoTorch node once there are 5 trials on the experiment.
+    #         MinTrials(
+    #             threshold=4,
+    #             transition_to=botorch_node.node_name,
+    #             use_all_trials_in_exp=True,
+    #         )
+    #     ],
+    # )
     # Center node is a customized node that uses a simplified logic and has a
     # built-in transition criteria that transitions after generating once.
-    center_node = CenterGenerationNode(next_node_name=sobol_node.node_name)
+    center_node = CenterGenerationNode(next_node_name=botorch_node.node_name)
     return GenerationStrategy(
-        name=f"Center+Sobol+{node_name}",
-        nodes=[center_node, sobol_node, botorch_node]
+        name=f"Center+qUpperConfidenceBound",
+        nodes=[center_node, botorch_node]
     )
     # return GenerationStrategy(name=f"{node_name}", nodes=[botorch_node])

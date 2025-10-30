@@ -15,6 +15,7 @@ class MessageReader:
 
         self.readers = {
             "geometry_msgs/msg/WrenchStamped": self.read_wrench_stamped,
+            "geometry_msgs/msg/TwistStamped": self.read_twist_stamped,
             "geometry_msgs/msg/Vector3": self.read_vector3,
             "robotrainer_deviation/msg/RobotrainerUserDeviation": self.read_robotrainer_deviation,
             "std_msgs/msg/String": self.read_data,
@@ -33,15 +34,29 @@ class MessageReader:
             "wrench_torque_z": msg.wrench.torque.z,
         }
         return record
-
-    def read_vector3(self, topic, msg):
+    
+    def read_twist_stamped(self, topic, msg):
 
         record = {
             "topic": topic,
-            "x": msg.x,
-            "y": msg.y,
-            "z": msg.z,
+            "twist_linear_x": msg.twist.linear.x,
+            "twist_linear_y": msg.twist.linear.y,
+            "twist_linear_z": msg.twist.linear.z,
+            "twist_angular_x": msg.twist.angular.x,
+            "twist_angular_y": msg.twist.angular.y,
+            "twist_angular_z": msg.twist.angular.z,
         }
+        return record
+
+    def read_vector3(self, topic, msg):
+
+        key = topic.split("/")[-1]
+        record = {
+                'topic': topic,
+                key + '_x': msg.x,
+                key + '_y': msg.y,
+                key + '_z': msg.z,
+            }
         return record
 
     def read_robotrainer_deviation(self, topic, msg):
@@ -121,12 +136,13 @@ class DataFrameProcessing:
             return self.df
 
     def create_df_without_virtual_force(self):
-        force_started = self.df[self.df["status"] == "force 0 started"]["timestamp"]
-        force_started.reset_index(drop=True, inplace=True)
-        df_without_virtual_force = self.df.drop(
-            self.df.loc[(self.df["timestamp"] >= force_started[0].item())].index
-        )
-        return df_without_virtual_force
+        if "resulting_force_x" in self.df.columns:
+            start_index = self.df.apply(pd.Series.first_valid_index)['resulting_force_x']
+            force_started = self.df['timestamp'][start_index]
+            df_without_virtual_force = self.df.drop(self.df.loc[(self.df['timestamp']>=force_started)].index)
+            return df_without_virtual_force
+        else:
+            return self.df
 
     def mean_values(self):
         mean_values = {}
@@ -171,6 +187,7 @@ class BagReader:
             "/base/virtual_forces/modalities_debug/status",
             "/robotrainer_deviation/robotrainer_deviation",
             "/biosensors/polar_oh1/hr",
+            "/base/fts_adaptive_force_controller/debug/velocity_output",
         ]
     
     def __init__(self):
@@ -282,8 +299,8 @@ def create_new_scenario(new_force, scenario_name):
     scale = new_force / original_length
     new_arrow = arrow * scale
     np.set_printoptions(suppress=True, precision=17)
-    start = 50
-    end = len(existing_scenario["path"]["points"])
+    start = 40
+    end = len(existing_scenario["path"]["points"]) - 40
     random_location = existing_scenario["path"]["points"][random.randint(start, end)]
     new_area = existing_scenario["path"][random_location]
     new_area = np.array(
@@ -320,10 +337,39 @@ def create_new_scenario(new_force, scenario_name):
 def get_mean_values_from_bag(bag_file_path, bag_reader):
     # Read selected topics from bag file in pandas DataFrame
     bag_data_df = bag_reader.read_bag_file(bag_file_path)
-
+    
     # Process Data
     df_processing = DataFrameProcessing(bag_data_df)
     bag_data_df_virtual_force = df_processing.create_virtual_force_df()
     virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
     mean_values = virtual_force_df_processing.mean_values()
     return mean_values
+
+def get_median_values_from_bag(bag_file_path, bag_reader):
+    # Read selected topics from bag file in pandas DataFrame
+    bag_data_df = bag_reader.read_bag_file(bag_file_path)
+
+    # Process Data
+    df_processing = DataFrameProcessing(bag_data_df)
+    bag_data_df_virtual_force = df_processing.create_virtual_force_df()
+    virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
+    median_values = virtual_force_df_processing.median_values()
+    return median_values
+
+def get_max_values_from_bag(bag_file_path, bag_reader):
+    # Read selected topics from bag file in pandas DataFrame
+    bag_data_df = bag_reader.read_bag_file(bag_file_path)
+
+    # Process Data
+    df_processing = DataFrameProcessing(bag_data_df)
+    bag_data_df_virtual_force = df_processing.create_virtual_force_df()
+    virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
+    bag_data_df_virtual_force_mean_per_second = virtual_force_df_processing.create_mean_df()
+    max_values = {}
+    columns = bag_data_df_virtual_force_mean_per_second.columns
+    for key in columns:
+        try:
+            max_values[key] = bag_data_df_virtual_force_mean_per_second[key].max()
+        except:
+            continue
+    return max_values

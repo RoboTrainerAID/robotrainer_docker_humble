@@ -7,6 +7,7 @@ from ax.api.client import Client
 from ax.api.configs import RangeParameterConfig
 from ax.generation_strategy.model_spec import GeneratorSpec
 from ax.modelbridge.registry import Generators
+from ax.storage.botorch_modular_registry import register_acquisition_function
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
@@ -33,9 +34,9 @@ class BayesianOptimizationNode(Node):
             10,
         )
         self.study_status = ""
+        self.bags_folder = "/home/docker/ros_ws/data/bags/raw/"
 
         if not self.is_ground_truth:
-            self.bags_folder = "/home/docker/ros_ws/data/bags/"
             # Load initial data from config file
             self.config_file_path = "/home/docker/ros_ws/src/robotrainer_bayesian_optimization/robotrainer_bayesian_optimization/config.yaml"
             self.initial_data = {}
@@ -66,11 +67,11 @@ class BayesianOptimizationNode(Node):
                 ),
                 node_name="BoTorch w/ Custom Components",
             )
-
+            register_acquisition_function(qUpperConfidenceBound)
             self.client = Client()
 
             virtual_force = RangeParameterConfig(
-                name="virtual_force", parameter_type="int", bounds=(0, 120)
+                name="virtual_force", parameter_type="int", bounds=(0, 100)
             )
             parameters = [virtual_force]
             self.client.configure_experiment(
@@ -147,13 +148,13 @@ class BayesianOptimizationNode(Node):
 
         if not bag_file_path:
             response.success = False
-            response.message = "Can not find bag file path or there are two of them!"
+            response.message = "Can not find bag file path or there are two of them! Number of matches: " + str(len(matches))
             return response
         self.get_logger().info(f"Bag file path: {bag_file_path}")
         if not self.is_ground_truth:
             # Process Data
             mean_values = get_mean_values_from_bag(bag_file_path, self.bag_reader)
-
+            self.get_logger().info(f"Mean values from bag: {mean_values}")
             # Update BO model
             parameters, raw_data = (
                     self.next_parameters,
@@ -164,11 +165,15 @@ class BayesianOptimizationNode(Node):
                 f"Completed trial {self.next_index} with parameters {parameters} and data {raw_data}"
             )
             trials = self.client.get_next_trials(max_trials=1)
+
+            # Save model state
+            self.client.save_to_json_file(f"/home/docker/ros_ws/data/models/{self.study_status}.json")
+
             self.next_index, self.next_parameters = next(iter(trials.items()))
             self.get_logger().info(f"Next suggestion:\n - index: {self.next_index}, \n - parameters: {self.next_parameters}")
             
             # Create Scenario
-            scenario_id = f"trial_{self.next_index}_force_{self.next_parameters['virtual_force']}"
+            scenario_id = f"bayesian_optimisation_trial_{self.next_index}_force_{self.next_parameters['virtual_force']}"
             new_scenario = create_new_scenario(self.next_parameters["virtual_force"], scenario_id)
 
             # Save yaml
@@ -178,9 +183,10 @@ class BayesianOptimizationNode(Node):
             )
             with open(scenario_path_in_container, "w") as file:
                 yaml.dump(new_scenario, file)
-            
+
             response.success = True
             response.message = scenario_id
+            self.get_logger().info(f"Response message: {response.message}")
             self.get_logger().info(f"Created new scenario file: {scenario_name}")
         else:   
             if not self.random_trial_indices:
@@ -206,6 +212,8 @@ class BayesianOptimizationNode(Node):
             response.message = scenario_id
             self.get_logger().info(f"Created new scenario file: {scenario_name}")
         
+        self.get_logger().info(f"Successfully processed request: {response.success}.")
+        self.get_logger().info(f"Response message: {response.message}")
         return response
 
 
