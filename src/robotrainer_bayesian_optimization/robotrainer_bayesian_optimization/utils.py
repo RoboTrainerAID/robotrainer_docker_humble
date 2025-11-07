@@ -251,6 +251,15 @@ class BagReader:
         except:
             pass
         try:
+            bag_data_df['twist_linear'] = np.nan
+            bag_data_df['twist_linear'] =  np.where(
+                bag_data_df['topic'] == '/base/fts_adaptive_force_controller/debug/velocity_output', 
+                np.sqrt(bag_data_df['twist_linear_x'] ** 2 + bag_data_df['twist_linear_y'] ** 2 + bag_data_df['twist_linear_z'] ** 2), 
+                np.nan
+            )
+        except:
+            pass
+        try:
             bag_data_df['wrench_force'] = np.nan
             bag_data_df['wrench_force'] =  np.where(
                 bag_data_df['topic'] == '/base/output_data', 

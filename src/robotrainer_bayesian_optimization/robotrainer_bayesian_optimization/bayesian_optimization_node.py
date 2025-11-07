@@ -1,6 +1,9 @@
 import os
+import pickle
 import random
 
+import numpy as np
+import pandas as pd
 import rclpy
 import yaml
 from ax.api.client import Client
@@ -12,7 +15,12 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
-from .bayesian_optimisation import construct_generation_strategy, qUpperConfidenceBound
+from .bayesian_optimization_qNIPV import (
+    construct_generation_strategy,
+    evaluate_predictions,
+    plot_model_error_evolution,
+    qNegIntegratedPosteriorVariance,
+)
 from .utils import BagReader, create_new_scenario, get_mean_values_from_bag
 
 
@@ -37,6 +45,19 @@ class BayesianOptimizationNode(Node):
         self.bags_folder = "/home/docker/ros_ws/data/bags/raw/"
 
         if not self.is_ground_truth:
+            self.optimization_objective = "wrench_force_y"
+            self.metrics_list = []
+            # parameters for evaluation
+            self.test_grid = [
+                {"virtual_force": x1,}
+                for x1 in np.linspace(0, 100, 21)
+            ]
+            self.ground_truth_file = "/home/docker/ros_ws/data/ground_truth/U005_ground_truth_df_mean.json"
+            self.ground_truth_df = pd.read_json(self.ground_truth_file, orient="records", lines=True)
+            self.ground_truth_results = []
+            for force in range(0, 101, 5):
+                value = self.ground_truth_df.loc[self.ground_truth_df['Force'] == force, self.optimization_objective].values[0]
+                self.ground_truth_results.append(value)
             # Load initial data from config file
             self.config_file_path = "/home/docker/ros_ws/src/robotrainer_bayesian_optimization/robotrainer_bayesian_optimization/config.yaml"
             self.initial_data = {}
@@ -53,7 +74,7 @@ class BayesianOptimizationNode(Node):
                 mean_values = get_mean_values_from_bag(value, self.bag_reader)
                 trial_data = (
                     {"virtual_force": key},
-                    {"wrench_force": mean_values["wrench_force_y"]},
+                    {self.optimization_objective: mean_values[self.optimization_objective]},
                 )
                 self.preexisting_trials.append(trial_data)
 
@@ -63,11 +84,11 @@ class BayesianOptimizationNode(Node):
             generation_strategy = construct_generation_strategy(
                 generator_spec=GeneratorSpec(
                     model_enum=Generators.BOTORCH_MODULAR,
-                    model_kwargs={"botorch_acqf_class": qUpperConfidenceBound},
+                    model_kwargs={"botorch_acqf_class": qNegIntegratedPosteriorVariance},
                 ),
                 node_name="BoTorch w/ Custom Components",
             )
-            register_acquisition_function(qUpperConfidenceBound)
+            register_acquisition_function(qNegIntegratedPosteriorVariance)
             self.client = Client()
 
             virtual_force = RangeParameterConfig(
@@ -83,7 +104,7 @@ class BayesianOptimizationNode(Node):
             )
 
             first_metric_name = (
-                "wrench_force"  # this name is used during the optimization loop
+                self.optimization_objective  # this name is used during the optimization loop
             )
             objective = (
                 f"{first_metric_name}"  # minimization is specified by the negative sign
@@ -158,7 +179,7 @@ class BayesianOptimizationNode(Node):
             # Update BO model
             parameters, raw_data = (
                     self.next_parameters,
-                    {"wrench_force": mean_values["wrench_force_y"]},
+                    {self.optimization_objective: mean_values[self.optimization_objective]},
                 )
             self.client.complete_trial(trial_index=self.next_index, raw_data=raw_data)
             self.get_logger().info(
@@ -169,6 +190,33 @@ class BayesianOptimizationNode(Node):
             # Save model state
             self.client.save_to_json_file(f"/home/docker/ros_ws/data/models/{self.study_status}.json")
 
+            # Evaluate model
+            try:
+                self.get_logger().info("Starting prediction evaluation...")
+                predictions = self.client.predict(self.test_grid)
+                self.get_logger().info("Successfully obtained predictions.")
+                predictions_file = f"/home/docker/ros_ws/data/predictions/{self.study_status}.pkl"
+                plots_dir = "/home/docker/ros_ws/data/plots/"
+                with open(predictions_file, "wb") as f:
+                    pickle.dump(predictions, f)
+                self.get_logger().info(f"Successfully saved predictions at {predictions_file}")
+                # metrics = evaluate_predictions(
+                #     predictions=predictions,
+                #     ground_truth_results=self.ground_truth_results,
+                #     test_grid=self.test_grid,
+                #     trial_number=self.next_index,
+                #     model_name=self.study_status,
+                #     plots_dir=plots_dir,
+                #     logger=self.get_logger(),
+                # )
+                # self.metrics_list.append(metrics)
+                # metrics_df = pd.DataFrame(self.metrics_list)
+                # self.get_logger().info(f"Plotting model error evolution...")
+                # plot_model_error_evolution(metrics_df=metrics_df, plots_dir=plots_dir)
+
+            except Exception as e:
+                self.get_logger().warn(f"Prediction evaluation failed with exception: {e}") 
+   
             self.next_index, self.next_parameters = next(iter(trials.items()))
             self.get_logger().info(f"Next suggestion:\n - index: {self.next_index}, \n - parameters: {self.next_parameters}")
             
