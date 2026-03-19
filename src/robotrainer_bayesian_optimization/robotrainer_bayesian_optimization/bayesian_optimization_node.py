@@ -143,8 +143,9 @@ class BayesianOptimizationNode(Node):
             self.next_parameters = {"virtual_force": self.random_trial_indices.pop(0)}
 
             # Create Scenario
+            direction = random.choice([1, -1])
             new_scenario = create_new_scenario(
-                self.next_parameters["virtual_force"], "initial_scenario"
+                self.next_parameters["virtual_force"], "initial_scenario", direction=direction
             )
 
             # Save yaml
@@ -253,8 +254,9 @@ class BayesianOptimizationNode(Node):
             self.next_index += 1
             self.next_parameters = {"virtual_force": self.random_trial_indices.pop(0)}
             scenario_id = f"ground_truth_trial_{self.next_index}_force_{self.next_parameters['virtual_force']}"
+            direction = random.choice([1, -1])
             new_scenario = create_new_scenario(
-                self.next_parameters["virtual_force"], scenario_id
+                self.next_parameters["virtual_force"], scenario_id, direction=direction
             )
 
             # Save yaml
@@ -277,7 +279,7 @@ class BayesianOptimizationNode(Node):
 def main():
     rclpy.init()
 
-    node = BayesianOptimizationNode(is_ground_truth=False)
+    node = BayesianOptimizationNode(is_ground_truth=True)
 
     try:
         rclpy.spin(node)
