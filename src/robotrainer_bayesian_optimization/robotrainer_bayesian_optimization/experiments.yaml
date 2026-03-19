@@ -1,0 +1,200 @@
+experiment_0001:
+  name: "experiment_0001_running_direction_1_force_0_force_direction_1_user_correction_parallel_speed_slow_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 0
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "slow"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0002:
+  name: "experiment_0002_running_direction_1_force_0_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 0
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0003:
+  name: "experiment_0003_running_direction_1_force_0_force_direction_1_user_correction_parallel_speed_fast_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 0
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "fast"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0004:
+  name: "experiment_0004_running_direction_1_force_40_force_direction_1_user_correction_parallel_speed_slow_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "slow"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0005:
+  name: "experiment_0005_running_direction_1_force_40_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0006:
+  name: "experiment_0006_running_direction_1_force_40_force_direction_1_user_correction_parallel_speed_fast_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "fast"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0007:
+  name: "experiment_0007_running_direction_1_force_40_force_direction_1_user_correction_rotation_speed_slow_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "slow"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0008:
+  name: "experiment_0008_running_direction_1_force_40_force_direction_1_user_correction_rotation_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0009:
+  name: "experiment_0009_running_direction_1_force_40_force_direction_1_user_correction_rotation_speed_fast_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 40
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "fast"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0010:
+  name: "experiment_0010_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0011:
+  name: "experiment_0011_running_direction_-1_force_60_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: -1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0012:
+  name: "experiment_0012_running_direction_1_force_60_force_direction_-1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: -1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0013:
+  name: "experiment_0013_running_direction_1_force_60_force_direction_1_user_correction_rotation_speed_medium_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0014:
+  name: "experiment_0014_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_slow_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "slow"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0015:
+  name: "experiment_0015_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_fast_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "fast"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0016:
+  name: "experiment_0016_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_passive_behavior_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "passive_behavior"
+    maximum_force: "default"
+experiment_0017:
+  name: "experiment_0017_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_low"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "low"
+experiment_0018:
+  name: "experiment_0018_running_direction_1_force_60_force_direction_1_user_correction_parallel_speed_medium_robotrainer_mode_default_maximum_force_high"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "parallel"
+    speed: "medium"
+    robotrainer_mode: "default"
+    maximum_force: "high"
+experiment_0019:
+  name: "experiment_0019_running_direction_1_force_60_force_direction_1_user_correction_rotation_speed_slow_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "slow"
+    robotrainer_mode: "default"
+    maximum_force: "default"
+experiment_0020:
+  name: "experiment_0020_running_direction_1_force_60_force_direction_1_user_correction_rotation_speed_fast_robotrainer_mode_default_maximum_force_default"
+  parameters:
+    running_direction: 1
+    force: 60
+    force_direction: 1
+    user_correction: "rotation"
+    speed: "fast"
+    robotrainer_mode: "default"
+    maximum_force: "default"
