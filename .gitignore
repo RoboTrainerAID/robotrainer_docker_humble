@@ -2,10 +2,11 @@
 # .vscode
 .DS_Store
 .idea
-data/
 data/bags/*.bag
 data/initial_data/*.bag
 data/scenarios/*.yaml
+data/scenarios/old
+data/ground_truth/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

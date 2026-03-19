@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'robotrainer_bayesian_optimization = robotrainer_bayesian_optimization.bayesian_optimization_node:main',
+            'user_data_test_node = robotrainer_bayesian_optimization.user_data_test_node:main', 
         ],
     },
 )
