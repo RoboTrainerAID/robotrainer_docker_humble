@@ -46,8 +46,8 @@ class UserDataTestNode(Node):
         # Create Scenario
         new_scenario = create_new_scenario(
             self.experiments[self.next_experiment]["parameters"]["force"],
-            self.experiments[self.next_experiment]["parameters"]["force_direction"],
             self.experiments[self.next_experiment]["name"],
+            self.experiments[self.next_experiment]["parameters"]["force_direction"],
         )
 
         # Save yaml
@@ -106,8 +106,8 @@ class UserDataTestNode(Node):
         scenario_id = f"{self.experiments[self.next_experiment]['name']}"
         new_scenario = create_new_scenario(
             self.experiments[self.next_experiment]["parameters"]["force"],
-            self.experiments[self.next_experiment]["parameters"]["force_direction"],
             scenario_id,
+            self.experiments[self.next_experiment]["parameters"]["force_direction"],
         )
 
         # Save yaml
