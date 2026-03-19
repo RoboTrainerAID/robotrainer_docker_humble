@@ -272,7 +272,7 @@ class BagReader:
         return bag_data_df
 
 
-def create_new_scenario(new_force, scenario_name):
+def create_new_scenario(new_force, scenario_name, direction=1):
 
     default_scenario_path = "/home/docker/ros_ws/data/scenarios/default_scenario.yaml"
     with open(default_scenario_path, "r") as file:
@@ -309,7 +309,8 @@ def create_new_scenario(new_force, scenario_name):
     new_arrow = arrow * scale
     np.set_printoptions(suppress=True, precision=17)
     start = 40
-    end = len(existing_scenario["path"]["points"]) - 40
+    end = len(existing_scenario["path"]["points"]) - 60
+    end_location = end
     random_location = existing_scenario["path"]["points"][random.randint(start, end)]
     new_area = existing_scenario["path"][random_location]
     new_area = np.array(
@@ -325,9 +326,9 @@ def create_new_scenario(new_force, scenario_name):
     existing_scenario["force"]["data"][force_name]["area"]["y"] = new_area.tolist()[1]
     existing_scenario["force"]["data"][force_name]["area"]["z"] = new_area.tolist()[2]
 
-    existing_scenario["force"]["data"][force_name]["arrow"]["x"] = new_arrow.tolist()[0]
-    existing_scenario["force"]["data"][force_name]["arrow"]["y"] = new_arrow.tolist()[1]
-    existing_scenario["force"]["data"][force_name]["arrow"]["z"] = new_arrow.tolist()[2]
+    existing_scenario["force"]["data"][force_name]["arrow"]["x"] = new_arrow.tolist()[0] * direction
+    existing_scenario["force"]["data"][force_name]["arrow"]["y"] = new_arrow.tolist()[1] * direction
+    existing_scenario["force"]["data"][force_name]["arrow"]["z"] = new_arrow.tolist()[2] * direction
 
     existing_scenario["force"]["data"][force_name]["margin"]["x"] = new_margin.tolist()[0]
     existing_scenario["force"]["data"][force_name]["margin"]["y"] = new_margin.tolist()[1]
