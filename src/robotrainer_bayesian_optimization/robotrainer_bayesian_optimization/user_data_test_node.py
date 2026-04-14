@@ -30,7 +30,7 @@ class UserDataTestNode(Node):
         self.bags_folder = "/home/docker/ros_ws/data/bags/raw/"
 
         self.experiments = []
-        with open("/home/docker/ros_ws/data/experiments.yaml", "r") as file:
+        with open("/home/docker/ros_ws/data/experiments_consistency_test.yaml", "r") as file:
             experiments_dict = yaml.safe_load(file)
             # Convert YAML dict to list for index-based access
             self.experiments = list(experiments_dict.values())

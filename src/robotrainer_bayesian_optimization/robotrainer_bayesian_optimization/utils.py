@@ -1,5 +1,6 @@
 import random
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -14,23 +15,23 @@ class MessageReader:
     def __init__(self):
 
         self.readers = {
-            "geometry_msgs/msg/WrenchStamped": self.read_wrench_stamped,
-            "geometry_msgs/msg/TwistStamped": self.read_twist_stamped,
-            "geometry_msgs/msg/Vector3": self.read_vector3,
-            "robotrainer_deviation/msg/RobotrainerUserDeviation": self.read_robotrainer_deviation,
-            "std_msgs/msg/String": self.read_data,
-            "std_msgs/msg/Int32": self.read_data,
-            "visualization_msgs/msg/Marker": self.read_marker,
-            "ipr_helpers/msg/Pose2DStamped": self.read_pose2d_stamped,
+            "geometry_msgs/msg/WrenchStamped": self.read_wrench_stamped, # output_data topic
+            "geometry_msgs/msg/TwistStamped": self.read_twist_stamped, # velocity_output topic
+            "geometry_msgs/msg/Vector3": self.read_vector3, # position, velocity_in, velocity_out, resulting_velocity, resulting_force topics
+            "robotrainer_deviation/msg/RobotrainerUserDeviation": self.read_robotrainer_deviation, # robotrainer_deviation topic
+            "std_msgs/msg/String": self.read_data, # status topic
+            "std_msgs/msg/Int32": self.read_data, # hr topic
+            "visualization_msgs/msg/Marker": self.read_marker, # visualization_marker topic
+            "ipr_helpers/msg/Pose2DStamped": self.read_pose2d_stamped, # mobile_robot_pose topic
         }
 
     def read_pose2d_stamped(self, topic, msg):
 
         record = {
             "topic": topic,
-            "pose2d_position_x": msg.pose.x,
-            "pose2d_position_y": msg.pose.y,
-            "pose2d_orientation_theta": msg.pose.theta,
+            "pose_x": msg.pose.x,
+            "pose_y": msg.pose.y,
+            "pose_theta": msg.pose.theta,
         }
         return record
 
@@ -228,18 +229,18 @@ class BagReader:
     geometry_msgs/Pose2D pose
     """
     selected_topics = [
-        "/base/output_data",
-        "/base/virtual_forces/modalities_debug/resulting_force",
-        "/base/virtual_forces/modalities_debug/status",
-        "/robotrainer_deviation/robotrainer_deviation",
-        "/biosensors/polar_oh1/hr",
-        "/base/fts_adaptive_force_controller/debug/velocity_output",
-        "/base/virtual_forces/modalities_debug/velocity_in",
-        "/base/virtual_forces/modalities_debug/velocity_out",
-        "/base/virtual_forces/modalities_debug/resulting_velocity",
-        "/scenario_publisher/visualization_marker",
-        "/base/virtual_forces/modalities_debug/position",
-        "/mobile_robot_pose",
+        "/base/output_data", # WrenchStamped
+        "/base/virtual_forces/modalities_debug/resulting_force", # Vector3
+        "/base/virtual_forces/modalities_debug/status", # String
+        "/robotrainer_deviation/robotrainer_deviation", # RobotrainerUserDeviation
+        "/biosensors/polar_oh1/hr", # Int32
+        "/base/fts_adaptive_force_controller/debug/velocity_output", # TwistStamped
+        "/base/virtual_forces/modalities_debug/velocity_in", # Vector3
+        "/base/virtual_forces/modalities_debug/velocity_out", # Vector3
+        "/base/virtual_forces/modalities_debug/resulting_velocity", # Vector3
+        # "/scenario_publisher/visualization_marker", # VisualizationMarker
+        "/base/virtual_forces/modalities_debug/position", # Vector3
+        "/mobile_robot_pose", # Pose2DStamped
     ]
 
     def __init__(self):
@@ -468,12 +469,12 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
         mean_df["wrench_force_x"] * mean_df["twist_linear_x"]
         + mean_df["wrench_force_y"] * mean_df["twist_linear_y"]
         + mean_df["wrench_torque_z"] * mean_df["twist_angular_z"]
-    )
+    ).fillna(0)
     mean_df["power_velocity_in"] = (
         mean_df["wrench_force_x"] * mean_df["velocity_in_x"]
         + mean_df["wrench_force_y"] * mean_df["velocity_in_y"]
         + mean_df["wrench_torque_z"] * mean_df["velocity_in_z"]
-    )
+    ).fillna(0)
     dt = 0.1
     total_work = np.trapz(mean_df["power"], dx=dt)
     total_work_velocity_in = np.trapz(mean_df["power_velocity_in"], dx=dt)
@@ -482,7 +483,9 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
     absolute_work = np.trapz(np.abs(mean_df["power"]), dx=dt)
     absolute_work_velocity_in = np.trapz(np.abs(mean_df["power_velocity_in"]), dx=dt)
     positive_mean_power = mean_df.loc[mean_df["power"] > 0, "power"].mean()
+    positive_mean_power = 0 if np.isnan(positive_mean_power) else positive_mean_power
     negative_mean_power = mean_df.loc[mean_df["power"] <= 0, "power"].mean()
+    negative_mean_power = 0 if np.isnan(negative_mean_power) else negative_mean_power
     mean_power = mean_df["power"].mean()
     mean_power_velocity_in = mean_df["power_velocity_in"].mean()
     virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
@@ -564,9 +567,21 @@ def get_max_values_from_bag(bag_file_path, bag_reader):
     return max_values
 
 
+def get_data_root():
+    """Get data root path - auto-detects Docker vs local environment."""
+    docker_path = Path("/home/docker/ros_ws/data")
+    local_path = Path("../../data").resolve()
+    
+    
+    # Use Docker path if it exists, otherwise use local path
+    if docker_path.exists():
+        return docker_path
+    return local_path
+
 def normalize_raw_values(df):
 
-    scenario_file = "/home/docker/ros_ws/data/scenarios/default_scenario.yaml"
+    data_root = get_data_root()
+    scenario_file = data_root / "scenarios" / "default_scenario.yaml"
     radius = 0.0
     with open(scenario_file, "r") as file:
         scenario = yaml.safe_load(file)
