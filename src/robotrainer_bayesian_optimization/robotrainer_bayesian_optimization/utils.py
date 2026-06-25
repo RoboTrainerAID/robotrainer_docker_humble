@@ -26,7 +26,6 @@ class MessageReader:
             "robotrainer_deviation/msg/PathIndex": self.read_path_index, # current_path_index topic
         }
 
-
     def read_path_index(self, topic, msg):
 
         record = {
@@ -486,8 +485,126 @@ def get_reaction_time_from_dataframe(bag_data_df, force_started_timestamp):
     return_time = (
         return_timestamp - force_started_timestamp
     ) / 1e9
-    return return_time, returned_to_path
+    return return_time, returned_to_path, return_timestamp
 
+
+def get_mean_values_in_reaction_window_from_bag(bag_file_path, bag_reader):
+    # Read selected topics from bag file in pandas DataFrame
+    bag_data_df = bag_reader.read_bag_file(bag_file_path)
+    bag_data_df = bag_data_df.sort_values("timestamp")
+    if "resulting_force_x" in bag_data_df.columns:
+        start_index = bag_data_df.apply(pd.Series.first_valid_index)[
+            "resulting_force_x"
+        ]
+        force_started_timestamp = bag_data_df["timestamp"][start_index]
+    else:
+        force_started_timestamp = bag_data_df["timestamp"].min()
+    reaction_time, returned_to_path, return_timestamp = get_reaction_time_from_dataframe(bag_data_df, force_started_timestamp)
+    reaction_window_df = bag_data_df.drop(
+                bag_data_df.loc[
+                    (bag_data_df["timestamp"] < force_started_timestamp)
+                    | (bag_data_df["timestamp"] > return_timestamp)
+                ].index
+            )
+    df_processing = DataFrameProcessing(reaction_window_df)
+    mean_values = df_processing.mean_values()
+
+    mean_values["reaction_time"] = reaction_time
+    mean_values["returned_to_path"] = returned_to_path
+
+    try:
+        mean_df = reaction_window_df.drop(
+            columns=[
+                "status",
+            ]
+        )
+    except:
+        mean_df = reaction_window_df.copy()
+    try:
+        mean_df = mean_df.drop(
+            columns=[
+                "marker_ns",
+                "marker_id",
+                "marker_type",
+                "marker_action",
+                "marker_scale_x",
+                "marker_scale_y",
+                "marker_scale_z",
+                "marker_color_r",
+                "marker_color_g",
+                "marker_color_b",
+                "marker_color_a",
+                "marker_pose_position",
+                "marker_pose_orientation_x",
+                "marker_pose_orientation_y",
+                "marker_pose_orientation_z",
+                "marker_pose_orientation_w",
+            ]
+        )
+    except:
+        pass
+    mean_df = mean_df.drop(
+        columns=[
+            "topic",
+        ]
+    )
+    mean_df = mean_df.dropna(axis=1, how="all")
+    mean_df["timestamp"] = mean_df["timestamp"] // 100_000_000
+    mean_df = mean_df.groupby(["timestamp"]).mean()
+    mean_df.reset_index(inplace=True)
+    mean_df["timestamp"] = (mean_df["timestamp"]) * 100_000_000
+
+    mean_df["power"] = (
+        mean_df["wrench_force_x"] * mean_df["twist_linear_x"]
+        + mean_df["wrench_force_y"] * mean_df["twist_linear_y"]
+        + mean_df["wrench_torque_z"] * mean_df["twist_angular_z"]
+    ).fillna(0)
+
+    mean_df["power_velocity_in"] = (
+        mean_df["wrench_force_x"] * mean_df["velocity_in_x"]
+        + mean_df["wrench_force_y"] * mean_df["velocity_in_y"]
+        + mean_df["wrench_torque_z"] * mean_df["velocity_in_z"]
+    ).fillna(0)
+
+    mean_df["front"] = mean_df["front"].fillna(0)
+
+    dt = 0.1
+
+    total_deviation = np.trapz(mean_df["front"], dx=dt)
+    mean_values["total_deviation"] = total_deviation
+
+    total_work = np.trapz(mean_df["power"], dx=dt)
+    mean_values["total_work"] = total_work
+
+    total_work_velocity_in = np.trapz(mean_df["power_velocity_in"], dx=dt)
+    mean_values["total_work_velocity_in"] = total_work_velocity_in
+
+    positive_work = np.trapz(np.maximum(mean_df["power"], 0), dx=dt)
+    negative_work = np.trapz(np.minimum(mean_df["power"], 0), dx=dt)
+    absolute_work = np.trapz(np.abs(mean_df["power"]), dx=dt)
+    mean_values["positive_work"] = positive_work
+    mean_values["negative_work"] = negative_work
+    mean_values["absolute_work"] = absolute_work
+
+    absolute_work_velocity_in = np.trapz(np.abs(mean_df["power_velocity_in"]), dx=dt)
+    mean_values["absolute_work_velocity_in"] = absolute_work_velocity_in
+
+    positive_mean_power = mean_df.loc[mean_df["power"] > 0, "power"].mean()
+    positive_mean_power = 0 if np.isnan(positive_mean_power) else positive_mean_power
+    mean_values["positive_mean_power"] = positive_mean_power
+
+    negative_mean_power = mean_df.loc[mean_df["power"] <= 0, "power"].mean()
+    negative_mean_power = 0 if np.isnan(negative_mean_power) else negative_mean_power
+    mean_values["negative_mean_power"] = negative_mean_power
+
+    mean_power = mean_df["power"].mean()
+    mean_values["mean_power"] = mean_power
+
+    mean_power_velocity_in = mean_df["power_velocity_in"].mean()
+    mean_values["mean_power_velocity_in"] = mean_power_velocity_in
+
+    return mean_values
+    
 
 def get_mean_values_from_bag(bag_file_path, bag_reader):
     # Read selected topics from bag file in pandas DataFrame
@@ -502,7 +619,7 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
     force_started_timestamp = bag_data_df_virtual_force["timestamp"].min()
     force_stopped_timestamp = bag_data_df_virtual_force["timestamp"].max()
     duration_vf = (force_stopped_timestamp - force_started_timestamp) * 1e-9
-    reaction_time, returned_to_path = get_reaction_time_from_dataframe(bag_data_df, force_started_timestamp)
+    reaction_time, returned_to_path, return_timestamp = get_reaction_time_from_dataframe(bag_data_df, force_started_timestamp)
     try:
         mean_df_vf = bag_data_df_virtual_force.drop(
             columns=[
@@ -540,6 +657,7 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
             "topic",
         ]
     )
+    mean_df_vf = mean_df_vf.dropna(axis=1, how="all")
     mean_df_vf["timestamp"] = mean_df_vf["timestamp"] // 100_000_000
     mean_df_vf = mean_df_vf.groupby(["timestamp"]).mean()
     mean_df_vf.reset_index(inplace=True)
@@ -570,8 +688,6 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
     mean_power_vf = mean_df_vf["power"].mean()
     mean_power_velocity_in_vf = mean_df_vf["power_velocity_in"].mean()
 
-
-    
     # Process Data in full dataframe
     bag_data_df_deviation = (
         bag_data_df[
@@ -635,6 +751,7 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
             "topic",
         ]
     )
+    mean_df_vf = mean_df_vf.dropna(axis=1, how="all")
     mean_df_full["timestamp"] = mean_df_full["timestamp"] // 100_000_000
     mean_df_full = mean_df_full.groupby(["timestamp"]).mean()
     mean_df_full.reset_index(inplace=True)
@@ -710,48 +827,10 @@ def get_mean_values_from_bag(bag_file_path, bag_reader):
 
     return mean_values
 
-
-# def get_median_values_from_bag(bag_file_path, bag_reader):
-#     # Read selected topics from bag file in pandas DataFrame
-#     bag_data_df = bag_reader.read_bag_file(bag_file_path)
-
-#     # Process Data
-#     df_processing = DataFrameProcessing(bag_data_df)
-#     bag_data_df_virtual_force = df_processing.create_virtual_force_df()
-#     force_started_timestamp = bag_data_df_virtual_force["timestamp"].min()
-#     force_stopped_timestamp = bag_data_df_virtual_force["timestamp"].max()
-#     duration = (force_stopped_timestamp - force_started_timestamp) * 1e-9
-#     virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
-#     median_values = virtual_force_df_processing.median_values()
-#     median_values["duration"] = duration
-#     return median_values
-
-
-# def get_max_values_from_bag(bag_file_path, bag_reader):
-#     # Read selected topics from bag file in pandas DataFrame
-#     bag_data_df = bag_reader.read_bag_file(bag_file_path)
-
-#     # Process Data
-#     df_processing = DataFrameProcessing(bag_data_df)
-#     bag_data_df_virtual_force = df_processing.create_virtual_force_df()
-#     virtual_force_df_processing = DataFrameProcessing(bag_data_df_virtual_force)
-#     bag_data_df_virtual_force_mean_per_second = (
-#         virtual_force_df_processing.create_mean_df()
-#     )
-#     max_values = {}
-#     columns = bag_data_df_virtual_force_mean_per_second.columns
-#     for key in columns:
-#         try:
-#             max_values[key] = bag_data_df_virtual_force_mean_per_second[key].max()
-#         except:
-#             continue
-#     return max_values
-
-
 def get_data_root():
     """Get data root path - auto-detects Docker vs local environment."""
     docker_path = Path("/home/docker/ros_ws/data")
-    local_path = Path("../../data").resolve()
+    local_path = Path("../local_data").resolve()
     
     
     # Use Docker path if it exists, otherwise use local path
@@ -761,6 +840,7 @@ def get_data_root():
 
 def normalize_raw_values(df):
 
+    df = df.sort_values("Force")
     data_root = get_data_root()
     scenario_file = data_root / "scenarios" / "default_scenario.yaml"
     radius = 0.0
