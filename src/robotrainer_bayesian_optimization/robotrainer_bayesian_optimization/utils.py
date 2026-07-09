@@ -18,6 +18,7 @@ class MessageReader:
             "geometry_msgs/msg/WrenchStamped": self.read_wrench_stamped, # output_data topic
             "geometry_msgs/msg/TwistStamped": self.read_twist_stamped, # velocity_output topic
             "geometry_msgs/msg/Vector3": self.read_vector3, # position, velocity_in, velocity_out, resulting_velocity, resulting_force topics
+            'geometry_msgs/msg/PoseStamped': self.read_pose_stamped, # robotrainer_front_marker_in_map
             "robotrainer_deviation/msg/RobotrainerUserDeviation": self.read_robotrainer_deviation, # robotrainer_deviation topic
             "std_msgs/msg/String": self.read_data, # status topic
             "std_msgs/msg/Int32": self.read_data, # hr topic
@@ -25,6 +26,21 @@ class MessageReader:
             "ipr_helpers/msg/Pose2DStamped": self.read_pose2d_stamped, # mobile_robot_pose topic
             "robotrainer_deviation/msg/PathIndex": self.read_path_index, # current_path_index topic
         }
+
+    def read_pose_stamped(self, topic, msg):
+
+        key = topic.split("/")[-1]
+        record = {
+            "topic": topic,
+            key + "_position_x": msg.pose.position.x,
+            key + "_position_y": msg.pose.position.y,
+            key + "_position_z": msg.pose.position.z,
+            key + "_orientation_x": msg.pose.orientation.x,
+            key + "_orientation_y": msg.pose.orientation.y,
+            key + "_orientation_z": msg.pose.orientation.z,
+            key + "_orientation_w": msg.pose.orientation.w,
+        }
+        return record
 
     def read_path_index(self, topic, msg):
 
@@ -254,6 +270,7 @@ class BagReader:
         "/base/virtual_forces/modalities_debug/position", # Vector3
         "/mobile_robot_pose", # Pose2DStamped
         "/robotrainer_deviation/current_path_index", # PathIndex
+        "/robotrainer_front_marker_in_map", # PoseStamped
     ]
 
     def __init__(self):
@@ -360,6 +377,33 @@ class BagReader:
             )
         except:
             pass
+        
+        if "robotrainer_front_marker_in_map_position_x" in bag_data_df.columns:
+            A = np.array([2.221491064834569, 9.20466652255805])
+            B = np.array([-4.272213712640104, 11.307309870541964])
+
+            AB = B - A
+            AB_length = np.linalg.norm(AB)
+
+            # Extract robot positions as an (N, 2) array
+            positions = bag_data_df[
+                [
+                    "robotrainer_front_marker_in_map_position_x",
+                    "robotrainer_front_marker_in_map_position_y",
+                ]
+            ].to_numpy()
+
+            # Vector from A to each position
+            AP = positions - A
+
+            # 2D cross product magnitude
+            cross = np.abs(AB[0] * AP[:, 1] - AB[1] * AP[:, 0])
+
+            # Distance from each point to the line
+            bag_data_df["front_marker_distance_to_line"] = cross / AB_length
+
+        bag_data_df = bag_data_df.dropna(axis=1, how="all")
+
         return bag_data_df
 
 
