@@ -44,7 +44,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 RUN pip install \
     pexpect \
-    bleak 
+    bleak \
+    bleakheart 
     
 RUN usermod -a -G bluetooth docker 
 ##############################################################################

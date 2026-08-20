@@ -3,9 +3,20 @@
 <package format="3">
   <name>polar_oh1</name>
   <version>0.0.1</version>
-  <description>it is to read the biosignals of the polar_oh1.</description>
+  <description>ROS 2 drivers for the Polar OH1+ and Polar H10 heart rate sensors.</description>
   <maintainer email="wonsu0513@gmail.com">Wonse Jo</maintainer>
   <license>Apache License 2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <!-- bleak and bleakheart are not packaged for rosdep;
+       install with: pip install bleak bleakheart -->
+
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
