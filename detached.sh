@@ -26,5 +26,5 @@ docker run \
     -v /dev:/dev  \
     -v /var/run/dbus:/var/run/dbus \
     ${CONTAINER_NAME}:${CONTAINER_TAG} \
-    /bin/bash -c "ros2 launch polar_oh1 ros2-polar_oh1.launch.py"
+    /bin/bash -c "ros2 launch polar_oh1 polar_h10.launch.py"
     

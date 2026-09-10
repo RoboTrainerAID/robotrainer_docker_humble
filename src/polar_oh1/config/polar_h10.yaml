@@ -4,7 +4,7 @@ polar_h10_node:
     # address ("A0:9E:1A:E0:BC:97") or a substring of the advertised name
     # ("Polar H10 554C6327" -> "554C6327").
     address: "24:AC:AC:1E:C2:03"
-    adapter: ""                     # e.g. "hci1" for a dedicated USB dongle
+    adapter: "hci1"                     # e.g. "hci1" for a dedicated USB dongle
     frame_id: "polar_h10"
     topic_prefix: "biosensors/polar_h10"
 
