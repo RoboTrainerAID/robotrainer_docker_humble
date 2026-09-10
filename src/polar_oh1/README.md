@@ -61,7 +61,7 @@ way to carry a timestamped number.
 | `hrv/n_beats` | `PointStamped` | beats behind this value | per beat |
 | `hrv/window_sec` | `PointStamped` | seconds this value actually covers | per beat |
 | `skin_contact` | `std_msgs/Bool` | electrode contact | 1 Hz |
-| `battery` | `sensor_msgs/BatteryState` | `percentage` 0..1 | 1/60 Hz |
+| `battery` | `std_msgs/Float32` | percent of full charge, 0..100 | 1/60 Hz |
 | `status` | `diagnostic_msgs/DiagnosticArray` | rates, clock delta, error counts | 1 Hz |
 
 Heart rate is published per beat rather than at a fixed 1 Hz. One consequence
@@ -137,9 +137,24 @@ time.
 
 ### Bridging to ROS 1
 
-All message types exist unchanged in ROS 1 (`geometry_msgs/PointStamped`,
-`geometry_msgs/Vector3Stamped`, `sensor_msgs/BatteryState`, `std_msgs/Bool`,
-`diagnostic_msgs/DiagnosticArray`).
+The driver deliberately sticks to long-stable message types whose definitions
+are the same on both sides, so the md5 sums match and the bridge carries every
+topic: `geometry_msgs/PointStamped`, `geometry_msgs/Vector3Stamped`,
+`std_msgs/Float32`, `std_msgs/Bool`, `diagnostic_msgs/DiagnosticArray`.
+
+That is why `battery` is a bare `std_msgs/Float32` and **not**
+`sensor_msgs/BatteryState`. `BatteryState`'s definition has changed across
+sensor_msgs versions, so a ROS 1 subscriber and the bridge can disagree on its
+md5 sum, and the subscriber then refuses the topic outright:
+
+```
+[ERROR] Client [...] wants topic /biosensors/polar_h10/battery to have
+datatype/md5sum [sensor_msgs/BatteryState/476f837f...], but our version has
+[sensor_msgs/BatteryState/4ddae7f0...]. Dropping connection.
+```
+
+Nothing is lost — the H10 reports a charge percentage and nothing else, so
+`percentage` was the only field of `BatteryState` that was ever populated.
 
 With ECG and ACC both on you are pushing **330 msg/s** of small messages
 through the bridge. That is a lot of per-message overhead and the most likely
@@ -147,6 +162,39 @@ place to lose samples. If you do not need chest acceleration, set
 `publish_acc: false` — it alone is 200 msg/s. Check `ecg_hz` and `acc_hz` in
 the `status` topic against 130 and 200 to confirm nothing is being dropped
 upstream of the bridge.
+
+#### Subscriber queue depth — do not use `dynamic_bridge`
+
+**A ROS 1 bag recorded through `dynamic_bridge` keeps only about a third of the
+ECG.** Measured on this setup with a 10 s recording:
+
+| Measured at | ECG rate | Delivered |
+|---|---|---|
+| `status/ecg_hz`, i.e. what the driver publishes | 131 Hz | — |
+| `ros2 bag record`, ROS 2 side | 125–131 Hz | ~100 % |
+| ROS 2 subscriber, QoS depth 100 or more | 133 Hz | ~100 % |
+| ROS 2 subscriber, QoS **depth 10** | 45 Hz | **35 %** |
+| ROS 1 bag via `dynamic_bridge` | 51 Hz | 39 % |
+
+The cause is burstiness, not throughput. BLE hands over ECG in frames of 10–20
+samples, and each sample is published as its own message, so ~15 messages hit
+the wire within microseconds. A `KEEP_LAST(10)` subscription overflows
+mid-burst and silently discards the remainder — `RELIABLE` does not help,
+because keep-last is *allowed* to overwrite. `dynamic_bridge` has no
+queue-size option and takes the library default of 10
+(`size_t queue_size = 10` in `ros1_bridge/bridge.hpp`), which is exactly the
+losing case. This affects `ros2 topic echo` and `rqt` too, and a bag recorded
+this way looks like a sensor problem while `ecg_hz` sits at 131.
+
+Use **`parameter_bridge`**, which reads a per-topic `queue_size` (default 100)
+and applies it to both its ROS 2 subscription and its ROS 1 publisher. In
+`robotrainer_docker_ros1_bridge` this is `bridge_topics.yaml` plus
+`./detached_parameter_bridge.sh` — the ECG and ACC entries carry
+`queue_size: 500`. The trade-off is that only listed topics cross the bridge,
+so anything else you need has to be added to that file.
+
+Recording on the ROS 2 side (`ros2 bag record`) captures everything without
+any of this.
 
 ### Parameters
 
@@ -160,6 +208,23 @@ See `config/polar_h10.yaml`; every parameter carries a description
   by the host. The driver stops both streams on exit.
 * The H10 supports two simultaneous BLE connections, so you can run this
   driver and the Polar Flow app together to cross-check readings.
+* **Battery level comes from whichever source the host exposes.** Normally it
+  is the GATT Battery Level characteristic (`0x2a19`). Where `bluetoothd`'s
+  battery plugin claims the Battery Service for itself, that characteristic is
+  not re-exported on the GATT D-Bus API and bleak reports *"Characteristic
+  00002a19-… was not found!"*; the driver then reads the `Percentage` property
+  of `org.bluez.Battery1` on the device object instead and logs which source it
+  settled on. To check by hand:
+
+  ```bash
+  dbus-send --system --print-reply --dest=org.bluez \
+      /org/bluez/hci1/dev_24_AC_AC_1E_C2_03 \
+      org.freedesktop.DBus.Properties.GetAll string:org.bluez.Battery1
+  ```
+
+  This needs the system bus inside the container — `-v /var/run/dbus:/var/run/dbus`,
+  which the run scripts already mount. Everything else in the driver is
+  unaffected: the battery level is the only signal BlueZ intercepts.
 * Moisten the electrodes. Wash the strap regularly. Worn electrodes give
   unreliable readings even when the strap looks fine.
 * Polar warns that motors, LED displays and electrical brakes interfere with

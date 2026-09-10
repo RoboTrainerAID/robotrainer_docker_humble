@@ -55,8 +55,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PointStamped, Vector3Stamped
-from sensor_msgs.msg import BatteryState
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 STANDARD_GRAVITY = 9.80665  # m/s^2, for the mG -> m/s^2 conversion
 
@@ -75,6 +74,93 @@ def adapter_kwargs(adapter: str) -> dict:
     if _BLEAK_USES_BLUEZ_ARGS:
         return {"bluez": {"adapter": adapter}}
     return {"adapter": adapter}
+
+
+# ---------------------------------------------------------------------------
+# Battery over BlueZ
+# ---------------------------------------------------------------------------
+
+# bluetoothd's battery plugin claims the GATT Battery Service (0x180f) for
+# itself and does not re-export its Battery Level characteristic (0x2a19) on
+# the GATT D-Bus API.  On such a host bleak cannot find the characteristic at
+# all -- "Characteristic 00002a19-0000-1000-8000-00805f9b34fb was not found!"
+# -- even though the H10 does provide it.  The level is then only readable as
+# the ``Percentage`` property of ``org.bluez.Battery1`` on the device object:
+#
+#   dbus-send --system --print-reply --dest=org.bluez \
+#       /org/bluez/hci1/dev_24_AC_AC_1E_C2_03 \
+#       org.freedesktop.DBus.Properties.GetAll string:org.bluez.Battery1
+#
+# dbus-fast is bleak's own BlueZ dependency, so it is installed wherever this
+# matters; the import stays guarded so the node still imports on a host
+# without BlueZ.
+try:
+    from dbus_fast import BusType, Message, MessageType
+    from dbus_fast.aio import MessageBus
+except ImportError:  # no BlueZ backend -- GATT is the only source
+    MessageBus = None
+
+BLUEZ_SERVICE = "org.bluez"
+BLUEZ_BATTERY_INTERFACE = "org.bluez.Battery1"
+BLUEZ_DEVICE_INTERFACE = "org.bluez.Device1"
+DBUS_PROPERTIES_INTERFACE = "org.freedesktop.DBus.Properties"
+DBUS_OBJECT_MANAGER_INTERFACE = "org.freedesktop.DBus.ObjectManager"
+
+
+async def _bluez_call(bus, path: str, interface: str, member: str,
+                      signature: str = "", body: Optional[list] = None) -> Optional[list]:
+    """Send one method call to bluetoothd; return its reply body, or None."""
+    reply = await bus.call(Message(destination=BLUEZ_SERVICE, path=path,
+                                   interface=interface, member=member,
+                                   signature=signature, body=body or []))
+    if reply is None or reply.message_type != MessageType.METHOD_RETURN:
+        return None
+    return reply.body
+
+
+async def read_bluez_battery_percent(address: str,
+                                     device_path: Optional[str] = None) -> Optional[int]:
+    """
+    Read ``org.bluez.Battery1.Percentage`` for a connected device.
+
+    Returns None whenever that interface is not there to be read: a host
+    without BlueZ, a bluetoothd without the battery plugin, or a device that is
+    not currently connected.  ``device_path`` is queried directly when it is
+    known; otherwise the BlueZ object tree is searched for a device with a
+    matching address, which also covers not knowing which adapter it sits on.
+
+    A short-lived bus connection per read keeps this clear of the connection
+    bleak maintains, at a cost that is irrelevant once a minute.
+    """
+    if MessageBus is None:
+        return None
+
+    bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+    try:
+        if device_path:
+            body = await _bluez_call(bus, device_path, DBUS_PROPERTIES_INTERFACE,
+                                     "Get", "ss",
+                                     [BLUEZ_BATTERY_INTERFACE, "Percentage"])
+            if body:
+                return int(body[0].value)
+
+        body = await _bluez_call(bus, "/", DBUS_OBJECT_MANAGER_INTERFACE,
+                                 "GetManagedObjects")
+        if not body:
+            return None
+
+        wanted = address.upper()
+        for interfaces in body[0].values():
+            battery = interfaces.get(BLUEZ_BATTERY_INTERFACE)
+            found = interfaces.get(BLUEZ_DEVICE_INTERFACE, {}).get("Address")
+            if not battery or found is None or found.value.upper() != wanted:
+                continue
+            percentage = battery.get("Percentage")
+            if percentage is not None:
+                return int(percentage.value)
+        return None
+    finally:
+        bus.disconnect()
 
 
 # ---------------------------------------------------------------------------
@@ -284,6 +370,10 @@ class PolarH10Link:
         self._hr: Optional[bleakheart.HeartRate] = None
         self._pmd: Optional[bleakheart.PolarMeasurementData] = None
         self._streams: List[str] = []
+        #: Which of the two battery sources answered last, so a host whose
+        #: bluetoothd owns the battery service is not asked for a hidden
+        #: characteristic once a minute.  Reset whenever neither answers.
+        self._battery_source: Optional[str] = None
         self._disconnected = asyncio.Event()
         self.shutdown = asyncio.Event()
 
@@ -382,12 +472,53 @@ class PolarH10Link:
         self._log.info("{} stream started ({})".format(
             measurement, ", ".join("{}={}".format(k, v) for k, v in settings.items())))
 
+    def _bluez_device_path(self) -> Optional[str]:
+        """
+        BlueZ object path of the connected device, if bleak's BlueZ backend
+        is in use.  Private bleak state, hence the defensive lookup: without it
+        :func:`read_bluez_battery_percent` searches by address instead.
+        """
+        return getattr(getattr(self._client, "_backend", None), "_device_path", None)
+
     async def _read_battery(self) -> None:
+        """
+        Publish the battery level, from GATT or from BlueZ.
+
+        The Battery Level characteristic is the portable source and is tried
+        first; ``org.bluez.Battery1`` covers the hosts where bluetoothd has
+        taken that characteristic over (see :func:`read_bluez_battery_percent`).
+        """
+        gatt_error: Optional[Exception] = None
+        if self._battery_source != "bluez":
+            try:
+                level = int(await bleakheart.BatteryLevel(self._client).read())
+            except Exception as exc:  # noqa: BLE001
+                gatt_error = exc
+            else:
+                self._battery_source = "gatt"
+                self._node.on_battery(level)
+                return
+
+        percent: Optional[int] = None
         try:
-            level = await bleakheart.BatteryLevel(self._client).read()
-            self._node.on_battery(int(level))
+            percent = await read_bluez_battery_percent(
+                self._client.address, self._bluez_device_path())
         except Exception as exc:  # noqa: BLE001
-            self._log.warn("Battery read failed: {}".format(exc), throttle_duration_sec=60.0)
+            self._log.debug("org.bluez.Battery1 read failed: {}".format(exc))
+
+        if percent is not None:
+            if self._battery_source != "bluez":
+                self._log.info(
+                    "Battery Level characteristic not exposed by bluetoothd - "
+                    "reading org.bluez.Battery1 instead")
+                self._battery_source = "bluez"
+            self._node.on_battery(percent)
+            return
+
+        self._battery_source = None
+        self._log.warn("Battery read failed: {}".format(
+            gatt_error if gatt_error is not None else "no battery level available"),
+            throttle_duration_sec=60.0)
 
     async def _teardown(self) -> None:
         """
@@ -522,7 +653,7 @@ class PolarH10Node(Node):
         self.pub_ecg = self.create_publisher(PointStamped, topic("ecg"), fast)
         self.pub_acc = self.create_publisher(Vector3Stamped, topic("acc"), fast)
         self.pub_contact = self.create_publisher(Bool, topic("skin_contact"), slow)
-        self.pub_battery = self.create_publisher(BatteryState, topic("battery"), slow)
+        self.pub_battery = self.create_publisher(Float32, topic("battery"), slow)
         self.pub_status = self.create_publisher(DiagnosticArray, topic("status"), slow)
         self.pub_hrv = {
             key: self.create_publisher(PointStamped, topic("hrv/" + key), slow)
@@ -599,24 +730,9 @@ class PolarH10Node(Node):
         self.pub_contact.publish(Bool(data=False))
 
     def on_battery(self, percent: int) -> None:
+        """Publish the battery level as a percentage of full charge, 0..100."""
         self._battery_percent = percent
-        msg = BatteryState()
-        msg.header.stamp = self._stamp(None)
-        msg.header.frame_id = self.p_frame_id
-        msg.voltage = float("nan")
-        msg.temperature = float("nan")
-        msg.current = float("nan")
-        msg.charge = float("nan")
-        msg.capacity = float("nan")
-        msg.design_capacity = float("nan")
-        msg.percentage = float(percent) / 100.0
-        msg.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
-        msg.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_UNKNOWN
-        msg.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_UNKNOWN
-        msg.present = True
-        msg.location = self.p_frame_id
-        msg.serial_number = self._device_address
-        self.pub_battery.publish(msg)
+        self.pub_battery.publish(Float32(data=float(percent)))
         self.get_logger().info("Battery level {}%".format(percent))
 
     def on_heartbeat(self, frame) -> None:
