@@ -5,6 +5,14 @@
 data/bags/*.bag
 data/initial_data/*.bag
 data/scenarios/*.yaml
+!data/scenarios/default_scenario.yaml
+!data/scenarios/1_green_line_force_right_40.yaml
+!data/scenarios/2_green_line_force_right_60.yaml
+!data/scenarios/3_green_line_force_right_80.yaml
+!data/scenarios/4_green_line.yaml
+!data/scenarios/5_green_line_force_left_40.yaml
+!data/scenarios/6_green_line_force_left_60.yaml
+!data/scenarios/7_green_line_force_left_80.yaml
 data/scenarios/old
 data/ground_truth/
 
