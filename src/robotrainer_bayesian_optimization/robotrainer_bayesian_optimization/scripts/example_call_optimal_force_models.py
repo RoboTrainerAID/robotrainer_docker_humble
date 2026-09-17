@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Minimal usage example for optimal_force_models.py — Methods 1-4.
 
-One synthetic participant, hard-coded. Run it:  python example_call_optimal_force_models.py
+The sensor features are read straight out of a ROS 1 bag; nothing is written to disk in between.
+Run it:  python example_call_optimal_force_models.py
 """
+
+from pathlib import Path
 
 from optimal_force_models import (all_optimal_forces, optimal_force_linear,
                                   optimal_force_quadratic, optimal_force_quadratic_maxforce,
                                   optimal_force_sensor_proxy)
+from sensor_feature_extraction import extract_features_from_bag, extract_user_features_from_bags
+
+DATA = Path(__file__).resolve().parents[3] / 'data'
 
 # ---------------------------------------------------------------- what the session collected ----
 
@@ -18,13 +24,35 @@ MAX_FORCE_N = 178.0
 # 0-100, HIGHER = BETTER, so it falls as the force rises.
 TLX_PERFORMANCE = {0.0: 70.0, 40.0: 60.0, 60.0: 50.0, 80.0: 40.0}     # {force [N]: rating}
 
-# Block 5a — the three proxy features per assessment task, in the units of
-# data/timeseries_features.csv. Same four force levels as above.
-TIMESERIES_FEATURES = {
-    'path_deviation_front_std':         {0.0: 0.027, 40.0: 0.069, 60.0: 0.103, 80.0: 0.097},
-    'user_force_y_impulse':             {0.0: -25.9, 40.0: -31.5, 60.0: -50.3, 80.0: -48.2},
-    'robot_vel_lin_mag_total_distance': {0.0: 8.19,  40.0: 8.34,  60.0: 8.28,  80.0: 8.51},
+# Block 5a — ONE ROS 1 BAG PER ASSESSMENT TASK.
+#
+#     BAG_PER_FORCE = {
+#          0.0: DATA / 'KATE_AA_U0XX_4_..._force_left_0-1_....bag',    # path 4, no disturbance
+#         40.0: DATA / 'KATE_AA_U0XX_5_..._force_left_40-1_....bag',   # path 5
+#         60.0: DATA / 'KATE_AA_U0XX_6_..._force_left_60-1_....bag',   # path 6
+#         80.0: DATA / 'KATE_AA_U0XX_7_..._force_left_80-1_....bag',   # path 7
+#     }
+
+BAG_60N = DATA / 'KATE_AA_U010_16_yellow_line_force_right_60-1_2025-08-07-18-58-52.bag'
+
+BAG_PER_FORCE = {
+     0.0: BAG_60N,     # TODO replace with the  0 N bag of this participant
+    40.0: BAG_60N,     # TODO replace with the 40 N bag
+    60.0: BAG_60N,     # the one real recording shipped here
+    80.0: BAG_60N,     # TODO replace with the 80 N bag
 }
+
+# ---------------------------------------------------------------- bag -> the three features -----
+
+# One call, one argument: the bag path. Reads only the three topics the features need
+# (~5000 messages out of a 6.8 GB bag) and returns the features directly.
+#### ONLY FOR TESTING: REMOVE FOR LIVE EXPEERIMENT
+print(f'reading {BAG_60N.name}')
+for name, value in extract_features_from_bag(BAG_60N).items():
+    print(f'  {name:<36}{value:.12g}')
+
+# The final call for all force levels
+TIMESERIES_FEATURES = extract_user_features_from_bags(BAG_PER_FORCE)
 
 # ---------------------------------------------------------------- block 5b: the four models -----
 
@@ -35,6 +63,7 @@ m2 = optimal_force_quadratic(TLX_PERFORMANCE, MAX_FORCE_N)
 m3 = optimal_force_quadratic_maxforce(TLX_PERFORMANCE, MAX_FORCE_N)
 m4 = optimal_force_sensor_proxy(TIMESERIES_FEATURES, MAX_FORCE_N)
 
+print()
 for result in (m1, m2, m3, m4):
     # .optimal_force_n is always safe to command: inside [0, force_cap_n].
     # .flag is 'ok' / 'ok_numeric' / 'clipped_low' / 'clipped_high' — anything but the first two is
