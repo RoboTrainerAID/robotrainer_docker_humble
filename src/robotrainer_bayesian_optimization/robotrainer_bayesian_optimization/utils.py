@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+import re
 from rosbags.rosbag1 import Reader
 from rosbags.typesys import Stores, get_typestore
 from rosbags.typesys.msg import get_types_from_msg
@@ -467,6 +468,42 @@ def create_new_scenario(new_force, scenario_name, direction=1):
     existing_scenario["force"]["data"][force_name]["margin"]["x"] = new_margin.tolist()[0]
     existing_scenario["force"]["data"][force_name]["margin"]["y"] = new_margin.tolist()[1]
     existing_scenario["force"]["data"][force_name]["margin"]["z"] = new_margin.tolist()[2]
+
+    scenario_path_on_robotrainer = (
+        "/home/robotrainer/workspace/docker/robotrainer_docker_bayesian_optimization/data/scenarios/"
+        + scenario_name
+    )
+    existing_scenario["scenario"] = scenario_path_on_robotrainer
+    scenario_id = "scenario_id" + datetime.now().strftime("%Y%m%d%H%M")
+    existing_scenario["scenario_id"] = scenario_id
+
+    return existing_scenario
+
+
+def create_new_static_scenario(new_force, scenario_name, direction=1):
+
+    default_scenario_path = "/home/docker/ros_ws/data/scenarios/default_scenario.yaml"
+    with open(default_scenario_path, "r") as file:
+        existing_scenario = yaml.safe_load(file)
+
+    force_name = existing_scenario["force"]["config"]["force_names"][0]
+
+    arrow = np.array(
+        [
+            existing_scenario["force"]["data"][force_name]["arrow"]["x"],
+            existing_scenario["force"]["data"][force_name]["arrow"]["y"],
+            existing_scenario["force"]["data"][force_name]["arrow"]["z"],
+        ]
+    )
+
+    original_length = np.linalg.norm(arrow)
+    scale = new_force / original_length
+    new_arrow = arrow * scale
+    np.set_printoptions(suppress=True, precision=17)
+
+    existing_scenario["force"]["data"][force_name]["arrow"]["x"] = new_arrow.tolist()[0] * direction
+    existing_scenario["force"]["data"][force_name]["arrow"]["y"] = new_arrow.tolist()[1] * direction
+    existing_scenario["force"]["data"][force_name]["arrow"]["z"] = new_arrow.tolist()[2] * direction
 
     scenario_path_on_robotrainer = (
         "/home/robotrainer/workspace/docker/robotrainer_docker_bayesian_optimization/data/scenarios/"
@@ -951,3 +988,11 @@ def normalize_raw_values(df):
             continue
 
     return df
+
+
+
+def extract_user_id(status):
+    match = re.search(r'_(U\d+)_', status)
+    if not match:
+        raise ValueError(f"Could not find user ID in filename: {status}")
+    return match.group(1)
