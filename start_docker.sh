@@ -25,6 +25,7 @@ docker run \
     -it \
     --net host \
     --rm \
+    -e BACKEND_URL="http://192.168.1.5:5001" \
     -e DISPLAY=${DISPLAY} \
     -e ROS_DOMAIN_ID=${ROS_DOMAIN_ID} \
     -e PYTHONPATH=${PYTHONPATH} \

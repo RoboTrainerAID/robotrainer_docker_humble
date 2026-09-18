@@ -25,7 +25,7 @@ class UserStudyDifficultyNode(Node):
         self.bag_per_force = {}
         self.bo_force = [15, 25, 35, 45, 55, 65, 75]  # Example force levels for Bayesian Optimization
 
-        self.BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5001")
+        self.BACKEND_URL = os.environ.get("BACKEND_URL", "http://192.168.1.5:5001")
         self.srv = self.create_service(
             Trigger, "/robotrainer_bayesian_optimization/update", self.update_callback
         )
