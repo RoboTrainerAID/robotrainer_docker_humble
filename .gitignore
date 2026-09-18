@@ -3,9 +3,12 @@
 .DS_Store
 .idea
 data/bags/*.bag
+data/bags/raw/*.bag
+data/bags/raw/*/*.bag
 data/initial_data/*.bag
 data/scenarios/*.yaml
 data/scenarios/old
+data/scenarios/data_test
 data/ground_truth/
 
 # Byte-compiled / optimized / DLL files

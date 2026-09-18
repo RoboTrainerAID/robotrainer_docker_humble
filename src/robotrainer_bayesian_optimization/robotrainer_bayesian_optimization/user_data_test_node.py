@@ -30,7 +30,7 @@ class UserDataTestNode(Node):
         self.bags_folder = "/home/docker/ros_ws/data/bags/raw/"
 
         self.experiments = []
-        with open("/home/docker/ros_ws/data/experiments.yaml", "r") as file:
+        with open("/home/docker/ros_ws/data/experiments_consistency_test.yaml", "r") as file:
             experiments_dict = yaml.safe_load(file)
             # Convert YAML dict to list for index-based access
             self.experiments = list(experiments_dict.values())
@@ -70,6 +70,9 @@ class UserDataTestNode(Node):
         )
 
         self.get_logger().info("Successfully started data test node. ")
+        self.get_logger().info(
+            f"Number of remaining trials: {len(self.random_trial_indices)}"
+        )
 
     def study_status_callback(self, msg):
         if not (self.study_status == msg.data):
@@ -133,6 +136,9 @@ class UserDataTestNode(Node):
 
         self.get_logger().info(f"Successfully processed request: {response.success}.")
         self.get_logger().info(f"Response message: {response.message}")
+        self.get_logger().info(
+            f"Number of remaining trials: {len(self.random_trial_indices)}"
+        )
         return response
 
 
