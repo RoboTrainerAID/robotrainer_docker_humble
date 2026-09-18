@@ -50,7 +50,7 @@ RUN pip install \
 RUN pip install seaborn \
     pandas==2.2.2
 
-RUN pip install -U "setuptools<80" "packaging>=24.0"
+RUN pip install -U "setuptools<80" "packaging>=24.0" "requests"
 
 ##############################################################################
 ##                                 dependencies_ws                          ##

@@ -23,7 +23,7 @@ class UserStudyDifficultyNode(Node):
         self.first_bayesian_optimization_experiment = False
         self.questionnaire_needed = False
         self.bag_per_force = {}
-        self.bo_force = [15, 25, 35, 45, 55, 65, 75]  # Example force levels for Bayesian Optimization
+        self.bo_force = [15] # Example force levels for Bayesian Optimization
 
         self.BACKEND_URL = os.environ.get("BACKEND_URL", "http://192.168.1.5:5001")
         self.srv = self.create_service(
@@ -40,6 +40,8 @@ class UserStudyDifficultyNode(Node):
 
         if self.study_status:
             self.user_id = self.extract_user_id(self.study_status)
+        else:
+            self.user_id = "U001"
 
         participants_response = requests.get(
             f'{self.BACKEND_URL}/participants/{self.user_id}', 
@@ -83,11 +85,11 @@ class UserStudyDifficultyNode(Node):
 
         data = {   
             "details": {},
-            "experiment_number": self.next_experiment_number,
+            "experiment_number": self.standard_experiments[self.next_experiment_number]["name"],
             "extra_step": self.standard_experiments[self.next_experiment_number]["parameters"]["extra_nasa_tlx_questions"],
-            "flag": None,
+            "flag": "" ,
             "force": self.standard_experiments[self.next_experiment_number]["parameters"]["force"],
-            "method": self.standard_experiments[self.next_experiment_number]["parameters"]["experimrent_method"],
+            "method": self.standard_experiments[self.next_experiment_number]["parameters"]["experiment_method"],
             "status": "waiting",
         }
         self.post_new_experiment(data)
@@ -108,7 +110,7 @@ class UserStudyDifficultyNode(Node):
         url = f"{self.BACKEND_URL}/participants/{self.participant_id}/new-experiment"
         
         response = requests.post(url, json=data, headers={'accept': 'application/json'})
-        if response.status_code == 201:
+        if response.status_code == 200:
             self.get_logger().info("Successfully posted new experiment")
         else:
             self.get_logger().info(f"Error posting new experiment: {response.status_code}, {response.text}")
@@ -126,7 +128,7 @@ class UserStudyDifficultyNode(Node):
 
     def create_nasa_tlx_plus_experiments(self, bag_per_force):
          # TODO: implement logic to create NASA-TLX+ experiments based on bag_per_force
-         with open("/home/docker/ros_ws/data/experiments_user_study_difficulty_default.yaml", "r") as file:
+         with open("/home/docker/ros_ws/data/experiments_user_study_difficulty_nasa_tlx_plus.yaml", "r") as file:
             experiments_dict = yaml.safe_load(file)
             # Convert YAML dict to list for index-based access
             experiments = list(experiments_dict.values())
@@ -196,7 +198,7 @@ class UserStudyDifficultyNode(Node):
             if not self.nasa_tlx_plus_experiment_indices:
                 self.nasa_tlx_plus_mode = False
                 self.bayesian_optimization_mode = True
-                self.first_bayesian_optimization_experiment = True
+                self.first_bayesian_optimization_experiment = False
                 self.get_logger().info("All NASA-TLX+ experiments completed. Switching to Bayesian Optimization mode.")
                 # TODO: implement logic to initialize Bayesian Optimization experiments
 
@@ -212,17 +214,19 @@ class UserStudyDifficultyNode(Node):
                 self.first_bayesian_optimization_experiment = False
                 # TODO: initialize Bayesian Optimization experiments
             else:
+                self.get_logger().info("Starting second+ Bayesian Optimization run.")
                 # TODO: implement logic for Bayesian Optimization experiments
                 # TODO: implement end of experiments logic, e.g., send a message to the user study manager that all experiments are completed
                 self.next_bo_force = self.bo_force.pop(0) if self.bo_force else None
-                if self.next_bo_force is not None:
+                if self.next_bo_force:
                     next_experiment = {
                         "name": f"bayesian_optimization_{self.next_bo_force}",
                         "parameters": {
                             "force": self.next_bo_force,
-                            "force_direction": "right",  # Example direction
+                            "force_direction": 1,  # Example direction
+                            "experiment_type": "bo",
                             "extra_nasa_tlx_questions": False,
-                            "experimrent_method": "bayesian_optimization",
+                            "experiment_method": "bayesian_optimization",
                         },
                     }
                     self.questionnaire_needed = True
@@ -250,11 +254,11 @@ class UserStudyDifficultyNode(Node):
             # create next experiment in the database
             data = {
                 "details": {},
-                "experiment_number": self.next_experiment_number,
+                "experiment_number": next_experiment["name"],
                 "extra_step": next_experiment["parameters"]["extra_nasa_tlx_questions"],
-                "flag": next_experiment.get("flag", None),
+                "flag": next_experiment.get("flag", ""),
                 "force": next_experiment["parameters"]["force"],
-                "method": next_experiment["parameters"]["experimrent_method"],
+                "method": next_experiment["parameters"]["experiment_method"],
                 "status": "waiting",
             }
             self.post_new_experiment(data)

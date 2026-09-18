@@ -4,7 +4,7 @@
 #     force: 0
 #     force_direction: 1
 #     experiment_type: "nasa_tlx" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-#     experimrent_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
 #     extra_nasa_tlx_questions: false
 # experiment_0002:
 #   name: "experiment_0002"
@@ -12,7 +12,7 @@
 #     force: 20
 #     force_direction: 1
 #     experiment_type: "nasa_tlx" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-#     experimrent_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
 #     extra_nasa_tlx_questions: false
 # experiment_0003:
 #   name: "experiment_0003"
@@ -20,7 +20,7 @@
 #     force: 40
 #     force_direction: 1
 #     experiment_type: "nasa_tlx" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-#     experimrent_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
 #     extra_nasa_tlx_questions: false
 # experiment_0004:
 #   name: "experiment_0004"
@@ -28,7 +28,7 @@
 #     force: 60
 #     force_direction: 1
 #     experiment_type: "nasa_tlx" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-#     experimrent_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
 #     extra_nasa_tlx_questions: false
 # experiment_0005:
 #   name: "experiment_0005"
@@ -36,33 +36,34 @@
 #     force: 80
 #     force_direction: 1
 #     experiment_type: "nasa_tlx" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-#     experimrent_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
 #     extra_nasa_tlx_questions: false
 experiment_0006:
   name: "experiment_0006"
   parameters:
     force: 20
+    force_direction: 1
     experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-    experimrent_mode: "linear" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    experiment_method: "linear" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
     extra_nasa_tlx_questions: true
-experiment_0007:
-  name: "experiment_0007"
-  parameters:
-    force: 40
-    experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-    experimrent_mode: "quadratic" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
-    extra_nasa_tlx_questions: true
-experiment_0008:
-  name: "experiment_0008"
-  parameters:
-    force: 60
-    experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-    experimrent_mode: "quadratic_max_force" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
-    extra_nasa_tlx_questions: true
-experiment_0009:
-  name: "experiment_0009"
-  parameters:
-    force: 80
-    experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
-    experimrent_mode: "sensor_proxy" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
-    extra_nasa_tlx_questions: true
+# experiment_0007:
+#   name: "experiment_0007"
+#   parameters:
+#     force: 40
+#     experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
+#     experiment_method: "quadratic" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     extra_nasa_tlx_questions: true
+# experiment_0008:
+#   name: "experiment_0008"
+#   parameters:
+#     force: 60
+#     experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
+#     experiment_method: "quadratic_max_force" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     extra_nasa_tlx_questions: true
+# experiment_0009:
+#   name: "experiment_0009"
+#   parameters:
+#     force: 80
+#     experiment_type: "nasa_tlx_plus" # nasa_tlx, nasa_tlx_plus, bayesian_optimization
+#     experiment_method: "sensor_proxy" # nasa_tlx: default, nasa_tlx_plus. linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+#     extra_nasa_tlx_questions: true
