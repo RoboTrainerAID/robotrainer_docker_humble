@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 
 import rclpy
 import requests
@@ -10,13 +11,13 @@ from ax.generation_strategy.model_spec import GeneratorSpec
 from ax.modelbridge.registry import Generators
 from ax.storage.botorch_modular_registry import register_acquisition_function
 from rclpy.node import Node
-from scripts.optimal_force_models import (
+from .scripts.optimal_force_models import (
     optimal_force_linear,
     optimal_force_quadratic,
     optimal_force_quadratic_maxforce,
     optimal_force_sensor_proxy,
 )
-from scripts.sensor_feature_extraction import extract_user_features_from_bags
+from .scripts.sensor_feature_extraction import extract_user_features_from_bags
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
@@ -74,7 +75,7 @@ class UserStudyDifficultyNode(Node):
         # with open("/home/docker/ros_ws/data/experiments_user_study_difficulty_standard.yaml", "r") as file:
         #     experiments_dict = yaml.safe_load(file)
         #     # Convert YAML dict to list for index-based access
-        #     self.standard_experiments = list(experiments_dict.values())
+        #     self.standard_study_experiments = list(experiments_dict.values())
         # experiment = self.standard_experiments.pop(0)
 
         # self.nasa_tlx_plus_experiments = []
@@ -166,6 +167,7 @@ class UserStudyDifficultyNode(Node):
             waiting_experiment = waiting_experiment_response.json()
         else:
             self.get_logger().info(f"Error: {waiting_experiment_response.status_code}, {waiting_experiment_response.text}") 
+            waiting_experiment = 0
 
         status_url = f"{self.BACKEND_URL}/experiments/{waiting_experiment}/change-status"
         status_response = requests.post(status_url, json={"status": "ready"}, headers={'accept': 'application/json'})
@@ -442,7 +444,10 @@ class UserStudyDifficultyNode(Node):
                 self.familiarization_mode = False
                 self.standard_study_mode = True
                 self.get_logger().info("All familiarization experiments completed. Switching to standard study mode.")
-                # TODO: implement logic to initialize standard study experiments
+                with open("/home/docker/ros_ws/data/experiments_user_study_difficulty_standard.yaml", "r") as file:
+                    experiments_dict = yaml.safe_load(file)
+                    # Convert YAML dict to list for index-based access
+                    self.standard_study_experiments = list(experiments_dict.values())
             else:
                 # Get the next experiment from the familiarization experiments list
                 next_experiment = self.familiarization_experiments.pop(0)
@@ -457,6 +462,7 @@ class UserStudyDifficultyNode(Node):
                 self.get_logger().info("All standard study experiments completed. Switching to NASA-TLX+ mode.")
                 try:
                     print("\n" + "=" * 50)
+                    sys.stdout.flush()  # Ensure that the prompt is printed before waiting for input
                     user_info = input("Whaiting for user input. If user finished the questionnaire, press ENTER: ")
                     print("=" * 50 + "\n")
                 except Exception as e:

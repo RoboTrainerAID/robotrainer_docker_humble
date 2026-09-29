@@ -35,6 +35,7 @@ from botorch.acquisition.utils import (
     compute_best_feasible_objective,
     prune_inferior_points,
 )
+from botorch.acquisition.input_constructors import construct_inputs_qNEI
 from botorch.exceptions.errors import BotorchError
 from botorch.models.model import Model
 from botorch.sampling.base import MCSampler
@@ -654,76 +655,6 @@ def _field_is_shared(
             return False
 
     return True
-
-
-@acqf_input_constructor(qNoisyExpectedImprovement)
-def construct_inputs_qNEI(
-    model: Model,
-    training_data: MaybeDict[SupervisedDataset],
-    objective: MCAcquisitionObjective | None = None,
-    posterior_transform: PosteriorTransform | None = None,
-    X_pending: Tensor | None = None,
-    sampler: MCSampler | None = None,
-    X_baseline: Tensor | None = None,
-    prune_baseline: bool | None = True,
-    cache_root: bool | None = None,
-    constraints: list[Callable[[Tensor], Tensor]] | None = None,
-    eta: Tensor | float = 1e-3,
-) -> dict[str, Any]:
-    r"""Construct kwargs for the ``qNoisyExpectedImprovement`` constructor.
-
-    Args:
-        model: The model to be used in the acquisition function.
-        training_data: Dataset(s) used to train the model.
-        objective: The objective to be used in the acquisition function.
-        posterior_transform: The posterior transform to be used in the
-            acquisition function.
-        X_pending: A ``m x d``-dim Tensor of ``m`` design points that have been
-            submitted for function evaluation but have not yet been evaluated.
-            Concatenated into X upon forward call.
-        sampler: The sampler used to draw base samples. If omitted, uses
-            the acquisition functions's default sampler.
-        X_baseline: A ``batch_shape x r x d``-dim Tensor of ``r`` design points
-            that have already been observed. These points are considered as
-            the potential best design point. If omitted, checks that all
-            training_data have the same input features and take the first ``X``.
-        prune_baseline: If True, remove points in ``X_baseline`` that are
-            highly unlikely to be the best point. This can significantly
-            improve performance and is generally recommended.
-        cache_root: A boolean indicating whether to cache the root
-            decomposition over ``X_baseline`` and use low-rank updates.
-            If None, will be set to True if the model supports it and False
-            otherwise.
-        constraints: A list of constraint callables which map a Tensor of posterior
-            samples of dimension ``sample_shape x batch-shape x q x m``-dim to a
-            ``sample_shape x batch-shape x q``-dim Tensor. The associated constraints
-            are considered satisfied if the output is less than zero.
-        eta: Temperature parameter(s) governing the smoothness of the sigmoid
-            approximation to the constraint indicators. For more details, on this
-            parameter, see the docs of ``compute_smoothed_feasibility_indicator``.
-
-    Returns:
-        A dict mapping kwarg names of the constructor to values.
-    """
-    if X_baseline is None:
-        X_baseline = _get_dataset_field(
-            training_data,
-            fieldname="X",
-            assert_shared=True,
-            first_only=True,
-        )
-    return {
-        "model": model,
-        "objective": objective,
-        "posterior_transform": posterior_transform,
-        "X_pending": X_pending,
-        "sampler": sampler,
-        "X_baseline": X_baseline,
-        "prune_baseline": prune_baseline,
-        "cache_root": cache_root,
-        "constraints": constraints,
-        "eta": eta,
-    }
 
 
 @acqf_input_constructor(qLogNoisyExpectedImprovement)

@@ -22,7 +22,8 @@ def generate_launch_description():
             executable='user_study_difficulty_node',
             name='user_study_difficulty_node',
             output='screen',
-            prefix=['stdbuf -o L'],
+            emulate_tty=True,
+            # prefix=['stdbuf -o L'],
             parameters=[config]
         )
     ])
