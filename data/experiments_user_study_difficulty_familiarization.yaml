@@ -1,0 +1,43 @@
+experiment_0001:
+  name: "familiarization_experiment_0000"
+  scenario_id: "4_green_line"
+  parameters:
+    force: 0
+    force_direction: -1
+    experiment_type: "familiarization" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: false
+    extra_nasa_tlx_question: false
+
+experiment_0002:
+  name: "familiarization_experiment_0001"
+  scenario_id: "1_green_line_force_right_40"
+  parameters:
+    force: 40
+    force_direction: -1
+    experiment_type: "familiarization" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: false
+    extra_nasa_tlx_question: false
+
+experiment_0003:
+  name: "familiarization_experiment_0002"
+  scenario_id: "2_green_line_force_right_60"
+  parameters:
+    force: 60
+    force_direction: -1
+    experiment_type: "familiarization" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: false
+    extra_nasa_tlx_question: false
+
+experiment_0004:
+  name: "familiarization_experiment_0003"
+  scenario_id: "3_green_line_force_right_80"
+  parameters:
+    force: 80
+    force_direction: -1
+    experiment_type: "familiarization" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: false
+    extra_nasa_tlx_question: false

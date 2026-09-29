@@ -1,0 +1,43 @@
+experiment_0005:
+  name: "default_experiment_0004"
+  scenario_id: "4_green_line"
+  parameters:
+    force: 0
+    force_direction: 1
+    experiment_type: "standard" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: true
+    extra_nasa_tlx_questions: false
+
+experiment_0006:
+  name: "default_experiment_0005"
+  scenario_id: "5_green_line_force_left_40"
+  parameters:
+    force: 40
+    force_direction: 1
+    experiment_type: "standard" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: true
+    extra_nasa_tlx_questions: false
+
+experiment_0007:
+  name: "default_experiment_0006"
+  scenario_id: "6_green_line_force_left_60"
+  parameters:
+    force: 60
+    force_direction: 1
+    experiment_type: "standard" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: true
+    extra_nasa_tlx_questions: false
+
+experiment_0008:
+  name: "default_experiment_0007"
+  scenario_id: "7_green_line_force_left_80"
+  parameters:
+    force: 80
+    force_direction: 1
+    experiment_type: "standard" # familiarization, nasa_tlx, nasa_tlx_plus, bayesian_optimization
+    experiment_method: "default" # nasa_tlx: default, nasa_tlx_plus: linear, quadratic, quadratic_max_force, sensor_proxy, bayesian_optimization: exploitation or exploration
+    nasa_tlx_needed: true
+    extra_nasa_tlx_questions: false
