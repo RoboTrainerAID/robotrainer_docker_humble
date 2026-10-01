@@ -11,13 +11,6 @@ from ax.generation_strategy.model_spec import GeneratorSpec
 from ax.modelbridge.registry import Generators
 from ax.storage.botorch_modular_registry import register_acquisition_function
 from rclpy.node import Node
-from .scripts.optimal_force_models import (
-    optimal_force_linear,
-    optimal_force_quadratic,
-    optimal_force_quadratic_maxforce,
-    optimal_force_sensor_proxy,
-)
-from .scripts.sensor_feature_extraction import extract_user_features_from_bags
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
@@ -26,6 +19,13 @@ from .bayesian_optimization_qNIPV_and_qLNEI import (
     qLogNoisyExpectedImprovement,
     qNegIntegratedPosteriorVariance,
 )
+from .scripts.optimal_force_models import (
+    optimal_force_linear,
+    optimal_force_quadratic,
+    optimal_force_quadratic_maxforce,
+    optimal_force_sensor_proxy,
+)
+from .scripts.sensor_feature_extraction import extract_user_features_from_bags
 from .utils import create_new_scenario
 
 
@@ -39,6 +39,7 @@ class UserStudyDifficultyNode(Node):
         self.nasa_tlx_plus_mode = False
         self.same_force_mode = False
         self.bayesian_optimization_mode = False
+        self.first_bo_experiment = False
         self.number_of_exploration_experiments = 5
         self.number_of_exploitation_experiments = 7
         self.current_force = 0
@@ -112,7 +113,7 @@ class UserStudyDifficultyNode(Node):
             data = {
                 "details": experiment.get("details", {}),
                 "experiment_name": experiment["name"],
-                "status": "waiting",
+                "status": "ready",
                 "extra_step": experiment["parameters"]["extra_nasa_tlx_questions"],
                 "force": experiment["parameters"]["force"],
                 "type": experiment["parameters"]["experiment_type"],
@@ -129,6 +130,8 @@ class UserStudyDifficultyNode(Node):
         response = requests.post(url, json=data, headers={'accept': 'application/json'})
         if response.status_code == 200:
             self.get_logger().info("Successfully posted new experiment")
+            data = response.json()
+            self.last_experiment_id = data.get("experiment_id")
         else:
             self.get_logger().info(f"Error posting new experiment: {response.status_code}, {response.text}")
     
@@ -386,14 +389,14 @@ class UserStudyDifficultyNode(Node):
 
     def get_next_bayesian_optimization_experiment(self, experiment_name):
         next_trial = self.client.get_next_trials(max_trials=1)
-        next_index, next_parameters = next(iter(next_trial.items()))
+        self.next_index, self.next_parameters = next(iter(next_trial.items()))
         self.get_logger().info(
-            f"Next suggestion:\n - index: {next_index}, \n - parameters: {next_parameters}"
+            f"Next suggestion:\n - index: {self.next_index}, \n - parameters: {self.next_parameters}"
         )
         self.bo_index += 1
-        scenario_id = f"{self.bo_index}_green_line_force_left_{next_parameters['virtual_force']}"
+        scenario_id = f"{self.bo_index}_green_line_force_left_{self.next_parameters['virtual_force']}"
         new_scenario = create_new_scenario(
-            next_parameters["virtual_force"], scenario_id
+            self.next_parameters["virtual_force"], scenario_id
         )
         with open(f"{self.scenarios_folder}{scenario_id}.yaml", "w") as file:
             yaml.dump(new_scenario, file)
@@ -406,7 +409,7 @@ class UserStudyDifficultyNode(Node):
             "name": experiment_name,
             "scenario_id": scenario_id,
             "parameters": {
-                "force": next_parameters["virtual_force"],
+                "force": self.next_parameters["virtual_force"],
                 "force_direction": 1,
                 "experiment_type": "bayesian_optimization", 
                 "experiment_method": method, 
@@ -418,6 +421,28 @@ class UserStudyDifficultyNode(Node):
         }
         return experiment
 
+    def get_tlx_performance_from_last_experiment(self):
+        url = f"{self.BACKEND_URL}/experiments/{self.last_experiment_id}"
+        headers = {"Content-Type": "application/json"}
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            experiment_data = response.json()
+            print("Experiment Data Retrieved Successfully:")
+            tlx_performance = experiment_data.get("scores", {}).get("performance")
+            if tlx_performance is not None:
+                print(f"TLX Performance: {tlx_performance}")
+                return tlx_performance
+            else:
+                print("TLX Performance data is missing in the response.")
+                return None
+
+        elif response.status_code == 404:
+            error = response.json()
+            print(f"Not Found: {error.get('message')}")
+            return None
+
+
     def update_callback(self, request, response):
 
         self.get_logger().info("Incoming request...")
@@ -427,7 +452,6 @@ class UserStudyDifficultyNode(Node):
         next_experiment = None
         # seting status of last experiment to ready
         self.get_logger().info("Setting last experiment status to ready...")
-        self.set_last_experiment_status_to_ready()
 
         # check if there is a bag file for the current study status
         bag_file_path = self.check_if_bag_file_exists(self.study_status)
@@ -460,13 +484,6 @@ class UserStudyDifficultyNode(Node):
                 self.standard_study_mode = False
                 self.nasa_tlx_plus_mode = True
                 self.get_logger().info("All standard study experiments completed. Switching to NASA-TLX+ mode.")
-                try:
-                    print("\n" + "=" * 50)
-                    sys.stdout.flush()  # Ensure that the prompt is printed before waiting for input
-                    user_info = input("Whaiting for user input. If user finished the questionnaire, press ENTER: ")
-                    print("=" * 50 + "\n")
-                except Exception as e:
-                    self.get_logger().error(f"Failed to capture terminal input: {str(e)}")
                 self.create_nasa_tlx_plus_experiments(self.bag_per_force) 
             else:
                 # Get the next experiment from the standard study experiments list
@@ -510,12 +527,18 @@ class UserStudyDifficultyNode(Node):
                 except Exception as e:
                     self.get_logger().error(f"Failed to capture terminal input: {str(e)}")
                 self.initialize_bayesian_optimization_experiments()
+                self.first_bo_experiment = True
             else:
                 next_experiment = self.same_force_experiments.pop(0)
                 self.current_force = next_experiment["parameters"]["force"]
 
         if self.bayesian_optimization_mode:
             if self.bayesian_optimization_experiments:
+                if not self.first_bo_experiment:
+                    tlx_performance = self.get_tlx_performance_from_last_experiment()
+                    self.client.complete_trial(trial_index=self.next_index, raw_data={self.optimization_objective: tlx_performance})
+                else:
+                    self.first_bo_experiment = False
                 experiment_name = self.bayesian_optimization_experiments.pop(0)
                 next_experiment = self.get_next_bayesian_optimization_experiment(experiment_name)
                 self.current_force = next_experiment["parameters"]["force"]
@@ -537,7 +560,7 @@ class UserStudyDifficultyNode(Node):
             data = {
                 "details": next_experiment.get("details", {}),
                 "experiment_name": next_experiment["name"],
-                "status": "waiting",
+                "status": "ready",
                 "extra_step": next_experiment["parameters"]["extra_nasa_tlx_questions"],
                 "force": next_experiment["parameters"]["force"],
                 "type": next_experiment["parameters"]["experiment_type"],
